@@ -11,8 +11,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='College_Announcement',
-            fields=[
+            name = 'College_Announcement',
+            fields = [
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('show', models.SmallIntegerField(choices=[(1, 'Yes'), (0, 'No')], default=0, verbose_name='是否显示')),
                 ('announcement', models.CharField(max_length=256, null=True, verbose_name='通知内容')),
