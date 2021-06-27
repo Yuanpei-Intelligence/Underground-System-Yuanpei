@@ -1,9 +1,9 @@
 # 数据库模型与操作
-from Appointment.utils import send_wechat_message
+from Appointment.utils.utils import send_wechat_message
 import os as os
 import pypinyin
-from Appointment.utils import operation_writer
-from Appointment.utils import write_before_delete
+from Appointment.utils.utils import operation_writer
+from Appointment.utils.utils import write_before_delete
 from Appointment.models import Student, Room, Appoint, College_Announcement
 from django.db.models import Q  # modified by wxy
 from django.db import transaction  # 原子化更改数据库
@@ -16,10 +16,6 @@ from django.urls import reverse
 import json  # 读取Json请求
 import requests as requests
 
-# Url加密相关
-from django.contrib.auth.hashers import BasePasswordHasher, MD5PasswordHasher, mask_hash
-import hashlib
-
 # csrf 检测和完善
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
@@ -28,26 +24,22 @@ from django.middleware.csrf import get_token
 from datetime import datetime, timedelta, timezone, time, date
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
-from Appointment.utils import appoint_violate
+from Appointment.utils.utils import appoint_violate
 import random
 import threading
 
+# 全局参数读取
+from Appointment import global_info, hash_identity_coder
+
 # 硬件对接工具
-from Appointment.utils import doortoroom
-from Appointment.utils import iptoroom
-# added by wxy 人数检查
-# 修改这两个变量以决定检查的宽严
-check_rate = 0.6  # 摄像头发来的每个数据，都有check_rate的几率当成采样点
-camera_qualified_check_rate = 0.4  # 人数够的次数达到(总采样次数*rate)即可。
-# 由于最短预约时间为30分钟，允许晚到15分钟，所以达标线设在50%以下比较合适(?)
-# end
+from Appointment.utils.utils import doortoroom, iptoroom
+
 
 # 像微信发送消息
 
 # 体验优化工具
 
 # 日志操作相关
-system_log = "Appoint_Sys"
 # 返回数据的接口规范如下：(相当于不返回，调用函数写入日志)
 # operation_writer(
 #   user,
@@ -60,39 +52,16 @@ system_log = "Appoint_Sys"
 # source表示写入这个log的位置，表示为"func[函数名]"
 # status_code为"OK","Problem","Error",其中Error表示需要紧急处理的问题
 
-
-# 哈希加密工具
-class MyMD5PasswordHasher(MD5PasswordHasher):
-    algorithm = "mymd5"
-    salt = ""
-
-    def __init__(self, salt):
-        self.salt = salt
-
-    def encode(self, password):
-        assert password is not None
-        password = (password+self.salt).encode('utf-8')
-        hash = hashlib.md5(password).hexdigest().upper()
-        return hash
-
-    def verify(self, password, encoded):
-        encoded_2 = self.encode(password)
-        return encoded.upper() == encoded_2.upper()
-
-
-hash_identity_coder = MyMD5PasswordHasher(salt='')
-
 scheduler = BackgroundScheduler()
 scheduler.add_jobstore(DjangoJobStore(), "default")
 
-# 是否清除一周前的预约
-delete_appoint_weekly = False
+
 
 
 # 每周清除预约的程序，会写入logstore中
 @register_job(scheduler, 'cron', id='ontime_delete', day_of_week='sat', hour='3', minute="30", second='0', replace_existing=True)
 def clear_appointments():
-    if delete_appoint_weekly:
+    if global_info.delete_appoint_weekly:   # 是否清除一周之前的预约
         appoints_to_delete = Appoint.objects.filter(
             Afinish__lte=datetime.now()-timedelta(days=7))
         try:
@@ -100,11 +69,11 @@ def clear_appointments():
             write_before_delete(appoints_to_delete)  # 删除之前写在记录内
             appoints_to_delete.delete()
         except Exception as e:
-            operation_writer(system_log, "定时删除任务出现错误: "+str(e),
+            operation_writer(global_info.system_log, "定时删除任务出现错误: "+str(e),
                              "func[clear_appointments]", "Problem")
 
         # 写入日志
-        operation_writer(system_log, "定时删除任务成功", "func[clear_appointments]")
+        operation_writer(global_info.system_log, "定时删除任务成功", "func[clear_appointments]")
 
 
 # 注册启动以上schedule任务
@@ -115,10 +84,6 @@ scheduler.start()
 # 是否开启登录系统，默认为开启
 temp_stuid = ""
 account_auth = True
-# 登录重定向位置
-login_url = ""  # 由陈子维学长提供的统一登录入口
-img_url = ""  # 跳过DNS解析的秘密访问入口,帮助加速头像
-this_url = ""  # 跳过DNS解析的秘密访问入口,帮助加速头像
 # wechat_post_url 写在了utils.py
 
 # tools
@@ -140,20 +105,20 @@ def img_get_func(request):
 
     # 设置当头像无法加载时的位置
     default_img_name = 'pipi_square_iRGk72U.jpg'
-    img_path = this_url + "/media/avatar/" + default_img_name
+    img_path = global_info.this_url + "/media/avatar/" + default_img_name
 
     # 尝试加载头像
     try:
         if account_auth:
             Sid = request.session['Sid']
             #Sid = request.GET['Sid']
-            urls = img_url + "/getStuImg?stuId=" + Sid
+            urls = global_info.img_url + "/getStuImg?stuId=" + Sid
             img_get = long_request.post(url=urls, verify=False, timeout=3)
 
             if img_get.status_code == 200:  # 接收到了学生信息
                 img_path = eval(
                     img_get.content.decode('unicode-escape'))['path']
-                img_path = login_url + img_path
+                img_path = global_info.login_url + img_path
                 # 存入缓存
                 request.session['img_path'] = img_path
 
@@ -183,7 +148,7 @@ def identity_check(request):    # 判断用户是否是本人
 
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
-    urls = login_url + "?origin=" + params
+    urls = global_info.login_url + "?origin=" + params
     if islogout:
         urls = urls + "&is_logout=1"
     return urls
@@ -237,150 +202,6 @@ def getAppoint(request):    # 班牌机对接程序
             }, status=200)
 
 
-def cancel_scheduler(aid):  # 目前已经废弃
-    try:
-        scheduler.remove_job(f'{aid}_finish')
-        try:
-            scheduler.remove_job(f'{aid}_start_wechat')
-        except:pass
-        return JsonResponse({'statusInfo': {
-            'message': '删除成功!',
-        }},
-            json_dumps_params={'ensure_ascii': False},
-            status=200)
-    except:
-        return JsonResponse({'statusInfo': {
-            'message': '删除计划不存在!',
-        }},
-            json_dumps_params={'ensure_ascii': False},
-            status=400)
-
-
-# write by cdf start1
-@csrf_exempt
-def del_appoint(contents):  # 目前已经废弃
-    try:
-        Sid = contents['Sid']
-        Aid = contents['Aid']
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '学号或预约缺失',
-                'detail': str(e)
-            }},
-            status=400)
-    try:
-        appoint = Appoint.objects.filter(Aid=int(Aid))[0]
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '预约不存在',
-                'detail': str(e)
-            }}, status=400)
-    try:
-        delta = appoint.Astart - datetime.now()
-        mins15 = timedelta(minutes=15)
-        assert delta > mins15
-        assert appoint.Astatus == Appoint.Status.APPOINTED
-    except Exception as e:
-        return JsonResponse(
-            {
-                'statusInfo': {
-                    'message': '预约状态或时间有问题',
-                    'detail': str(e),
-                    'timedelta': delta,
-                    'status': appoint.Astatus
-                }
-            },
-            status=400)
-    try:
-        stu = Student.objects.filter(Sid=str(Sid))[0]
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '学生不存在',
-                'detail': str(e)
-            }}, status=400)
-    try:
-        assert stu.Sname == appoint.major_student.Sname
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '学生并非主要预约人',
-                'detail': str(e)
-            }},
-            status=400)
-    try:
-        with transaction.atomic():
-            appoint.cancel()
-            scheduler.remove_job(f'{appoint.Aid}_finish')
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '删除成功',
-                'detail': appoint.toJson()
-            }})
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '删除失败',
-                'detail': str(e)
-            }}, status=400)
-
-# write by cdf end1
-
-
-@require_POST
-@csrf_exempt
-def addStudent(request):    # 目前已经废弃
-    contents = json.loads(request.body)
-    # 判断参数是否符合规范
-    try:
-        Sid = contents['Sid']
-        Sname = contents['Sname']
-        assert Sid != '' and Sname != '', 'empty parameters'
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '缺少参数或参数不符合规范',
-                'detail': str(e),
-            }},
-            status=400)
-    # 插入数据库
-    try:
-        student = Student.objects.filter(Sid=Sid)
-        assert not student.exists(), 'Sid already exists'
-        Student.objects.create(Sid=Sid, Sname=Sname)
-        return JsonResponse({'status': 0, 'data': 'success'})
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '学号已存在',
-                'detailed': str(e)
-            }},
-            status=400)
-
-
-@csrf_exempt
-def getStudent(request):    # 目前已经废弃
-    if request.method == 'GET':
-        students = Student.objects.all()
-        return JsonResponse({'data': obj2json(students)})
-    elif request.method == 'POST':
-        contents = json.loads(request.body)
-        try:
-            student = Student.objects.get(Sid=contents['Sid'])
-        except Exception as e:
-            return JsonResponse(
-                {'statusInfo': {
-                    'message': '学号不存在',
-                    'detail': str(e)
-                }},
-                status=400)
-        appoints = student.appoint_list.all()
-        data = [appoint.toJson() for appoint in appoints]
-        return JsonResponse({'data': data})
-
-
 # added by wxy
 def getStudentInfo(contents):   # 抓取学生信息的通用包
     try:
@@ -396,58 +217,6 @@ def getStudentInfo(contents):   # 抓取学生信息的通用包
         'Sid': str(student.Sid),
         'Scredit': str(student.Scredit)
     }
-
-
-@require_POST
-@csrf_exempt
-def addRoom(request):   # 目前已经废弃
-    contents = json.loads(request.body)
-    try:
-        room = Room.objects.create(Rid=contents['Rid'],
-                                   Rtitle=contents['Rtitle'],
-                                   Rmin=contents['Rmin'],
-                                   Rmax=contents['Rmax'],
-                                   Rstatus=contents['Rstatus'])
-        return JsonResponse({'data': obj2json(room)})
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '缺少参数或者房间号重复',
-                'detail': str(e)
-            }},
-            status=400)
-
-
-@csrf_exempt
-def getRoom(request):   # 目前已经废弃
-    if request.method == 'GET':
-        rooms = Room.objects.all()
-        return JsonResponse({'data': obj2json(rooms)})
-    elif request.method == 'POST':
-        contents = json.loads(request.body)
-        # 修改，异常处理
-        try:
-            room = Room.objects.get(Rid=contents['Rid'])
-        except Exception as e:
-            return JsonResponse(
-                {'statusInfo': {
-                    'message': '房间不存在',
-                    'detail': str(e)
-                }},
-                status=400)
-        appoints = room.appoint_list.not_canceled()
-        data = [appoint.toJson() for appoint in appoints]
-        return JsonResponse({'data': data})
-
-
-# 定时任务函数
-def startAppoint(Aid):  # 目前已经废弃
-    # 变更预约状态
-    appoint = Appoint.objects.get(Aid=Aid)
-    if appoint.Astatus == Appoint.Status.APPOINTED:
-        appoint.Astatus = Appoint.Status.PROCESSING  # processing
-        appoint.save()
-
 
 camera_lock = threading.RLock()
 
@@ -479,7 +248,7 @@ def cameracheck(request):   # 摄像头post的后端函数
             room.save()
 
     except Exception as e:
-        operation_writer(system_log, "房间"+str(rid) +
+        operation_writer(global_info.system_log, "房间"+str(rid) +
                          "更新摄像头人数失败1: "+str(e), "func[cameracheck]", "Error")
 
         return JsonResponse({'statusInfo': {
@@ -508,7 +277,7 @@ def cameracheck(request):   # 摄像头post的后端函数
                 rand = random.uniform(0, 1)
                 camera_lock.acquire()
                 with transaction.atomic():
-                    if rand > 1 - check_rate:
+                    if rand > 1 - global_info.check_rate:
                         content.Acamera_check_num += 1
                         if temp_stu_num >= num_need:
                             content.Acamera_ok_num += 1
@@ -516,7 +285,7 @@ def cameracheck(request):   # 摄像头post的后端函数
                 camera_lock.release()
                 # add end
         except Exception as e:
-            operation_writer(system_log, "预约"+str(content.Aid) +
+            operation_writer(global_info.system_log, "预约"+str(content.Aid) +
                              "更新摄像头人数失败2: "+str(e), "func[cameracheck]", "Error")
 
             return JsonResponse({'statusInfo': {
@@ -530,10 +299,10 @@ def cameracheck(request):   # 摄像头post的后端函数
                 status, tempmessage = appoint_violate(
                     content, Appoint.Reason.R_LATE)
                 if not status:
-                    operation_writer(system_log, "预约"+str(content.Aid) +
+                    operation_writer(global_info.system_log, "预约"+str(content.Aid) +
                                         "因迟到而违约,返回值出现异常: "+tempmessage, "func[cameracheck]", "Error")
         except Exception as e:
-            operation_writer(system_log, "预约"+str(content.Aid) +
+            operation_writer(global_info.system_log, "预约"+str(content.Aid) +
                                         "在迟到违约过程中: "+tempmessage, "func[cameracheck]", "Error")
         
         return JsonResponse({}, status=200)  # 返回空就好
@@ -561,7 +330,7 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
     # 变更预约状态
     appoint = Appoint.objects.get(Aid=Aid)
     mins15 = timedelta(minutes=15)
-    adjusted_camera_qualified_check_rate = camera_qualified_check_rate  # 避免直接使用全局变量! by pht
+    adjusted_camera_qualified_check_rate = global_info.camera_qualified_check_rate  # 避免直接使用全局变量! by pht
     try:
         # 如果处于进行中，表示没有迟到，只需检查人数
         if appoint.Astatus == Appoint.Status.PROCESSING:
@@ -575,7 +344,7 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
             else:
                 if appoint.Acamera_check_num == 0:
                     operation_writer(
-                        system_log, "预约"+str(appoint.Aid)+"摄像头检测次数为0", "finishAppoint", "Problem")
+                        global_info.system_log, "预约"+str(appoint.Aid)+"摄像头检测次数为0", "finishAppoint", "Problem")
                 # 检查人数是否足够
 
                 # added by pht: 需要根据状态调整 出于复用性和简洁性考虑在本函数前添加函数
@@ -589,7 +358,7 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
                     status, tempmessage = appoint_violate(
                         appoint, Appoint.Reason.R_TOOLITTLE)
                     if not status:
-                        operation_writer(system_log, "预约"+str(appoint.Aid) +
+                        operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
                                          "因人数不够而违约时出现异常: "+tempmessage, "func[finishAppoint]", "Error")
 
                 else:   # 通过
@@ -608,66 +377,15 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
                 status, tempmessage = appoint_violate(
                     appoint, Appoint.Reason.R_LATE)
                 if not status:
-                    operation_writer(system_log, "预约"+str(appoint.Aid) +
+                    operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
                                      "因迟到而违约时出现异常: "+tempmessage, "func[finishAppoint]", "Error")
 
     # 如果上述过程出现不可预知的错误，记录
     except Exception as e:
-        operation_writer(system_log, "预约"+str(appoint.Aid)+"在完成时出现异常:" +
+        operation_writer(global_info.system_log, "预约"+str(appoint.Aid)+"在完成时出现异常:" +
                          str(e)+",提交为waiting状态，请处理！", "func[finishAppoint]", "Error")
         appoint.Astatus = Appoint.Status.WAITING  # waiting
         appoint.save()
-
-
-def confirmAppoint(Aid):    # 目前已经废弃
-    # 变更预约状态
-    appoint = Appoint.objects.get(Aid=Aid)
-    if appoint.Astatus == Appoint.Status.WAITING:
-        appoint.Astatus = Appoint.Status.CONFIRMED  # confirmed
-        appoint.save()
-
-
-@require_POST
-@csrf_exempt
-def checkTime(request):  # 判断预定预约时该时间段是否可行，目前已经废弃
-    contents = json.loads(request.body)
-    try:
-        room = Room.objects.get(Rid=contents['Rid'])
-        assert room.Rstatus == Room.Status.PERMITTED, 'room service suspended!'
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '房间不存在或当前房间暂停预约服务',
-                'detail': str(e)
-            }},
-            status=400)
-    try:
-        Astart = datetime.strptime(contents['Astart'], '%Y-%m-%d %H:%M:%S')
-        Afinish = datetime.strptime(contents['Afinish'], '%Y-%m-%d %H:%M:%S')
-        assert Astart <= Afinish, 'Appoint time error'
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '时间错误',
-                'detail': str(e)
-            }}, status=400)
-    appoints = room.appoint_list.not_canceled()
-    for appoint in appoints:
-        start = appoint.Astart
-        finish = appoint.Afinish
-
-        # 第一种可能，开始在开始之前，只要结束的比开始晚就不行
-        # 第二种可能，开始在开始之后，只要在结束之前就都不行
-        if (start <= Astart <= finish) or (Astart <= start <= Afinish):
-            return JsonResponse(
-                {
-                    'statusInfo': {
-                        'message': '预约时间与已有预约冲突',
-                        'detail': appoint.toJson()
-                    }
-                },
-                status=400)
-    return JsonResponse({'data': 'ok'})
 
 
 @csrf_exempt
@@ -925,7 +643,7 @@ def addAppoint(contents):  # 添加预约, main function
                              str(appoint.Aid), "func[addAppoint]", "OK")
 
     except Exception as e:
-        operation_writer(system_log, "学生" + str(major_student) +
+        operation_writer(global_info.system_log, "学生" + str(major_student) +
                          "出现添加预约失败的问题:"+str(e), "func[addAppoint]", "Error")
         return JsonResponse({'statusInfo': {
             'message': '添加预约失败!请与管理员联系!',
@@ -977,7 +695,7 @@ def cancelAppoint(request):  # 取消预约
         try:
             scheduler.remove_job(f'{appoint.Aid}_finish')
         except:
-            operation_writer(system_log, "预约"+str(appoint.Aid) +
+            operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
                              "取消时发现不存在计时器", 'func[cancelAppoint]', "Problem")
         operation_writer(appoint.major_student.Sid, "取消了预约" +
                          str(appoint.Aid), "func[cancelAppoint]", "OK")
@@ -1003,7 +721,7 @@ def cancelAppoint(request):  # 取消预约
     '''
     if send_status == 1:
         # 记录错误信息
-        operation_writer(system_log, "预约" +
+        operation_writer(global_info.system_log, "预约" +
                              str(appoint.Aid) + "取消时向微信发消息失败，原因："+err_message, "func[addAppoint]", "Problem")
     '''
 
@@ -1011,7 +729,7 @@ def cancelAppoint(request):  # 取消预约
     try:
         scheduler.remove_job(f'{appoint.Aid}_start_wechat')
     except:
-        operation_writer(system_log, "预约"+str(appoint.Aid) +
+        operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
                          "取消时发现不存在wechat计时器，但也可能本来就没有", 'func[cancelAppoint]', "Problem")
 
     return redirect(
@@ -1062,22 +780,6 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
             }},
             status=400)
 
-
-@require_POST
-@csrf_exempt
-def getViolated(request):   # 获取违约预约，目前已经废弃
-    contents = json.loads(request.body)
-    try:
-        student = Student.objects.get(Sid=contents['Sid'])
-    except Exception as e:
-        return JsonResponse(
-            {'statusInfo': {
-                'message': '学号不存在',
-                'detail': str(e)
-            }}, status=400)
-    appoints = student.appoint_list.filter(Astatus=Appoint.Status.VIOLATED)
-    data = [appoint.toJson() for appoint in appoints]
-    return JsonResponse({'data': data})
 
 
 @csrf_exempt
@@ -1219,7 +921,7 @@ def admin_index(request):   # 我的账户也主函数
     img_path, valid_path = img_get_func(request)
     if valid_path:
         request.session['img_path'] = img_path
-    #img_path = this_url +  reverse("Appointment:img_get_func") + "?Sid=" + Sid
+    #img_path = global_info.this_url +  reverse("Appointment:img_get_func") + "?Sid=" + Sid
 
     # 分成两类,past future
     # 直接从数据库筛选两类预约
@@ -1282,7 +984,7 @@ def admin_credit(request):
     if valid_path:
         request.session['img_path'] = img_path
 
-    #img_path = this_url +  reverse("Appointment:img_get_func") + "?Sid=" + Sid
+    #img_path = global_info.this_url +  reverse("Appointment:img_get_func") + "?Sid=" + Sid
 
     contents = {'Sid': str(Sid)}
     vio_list = json.loads(getViolated_2(contents).content).get('data')
@@ -1381,7 +1083,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                         now_appoint.Astatus = Appoint.Status.PROCESSING
                         now_appoint.save()
         except Exception as e:
-            operation_writer(system_log,
+            operation_writer(global_info.system_log,
                              "可以开门却不开门的致命错误，房间号为" +
                              str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
                              "func[doorcheck]",
