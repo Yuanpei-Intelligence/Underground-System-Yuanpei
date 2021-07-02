@@ -44,6 +44,15 @@ class LongTermInfo():
         # 是否清除一周前的预约
         self.delete_appoint_weekly = False
 
+        # 表示当天预约时放宽的人数下限
+        self.today_min = 2
+        # 是否允许不存在学生自动注册
+        self.allow_newstu_appoint = True
+
+        # 是否开启登录系统，默认为开启
+        self.debug_stuid = "1800017704" # YHT学号
+        self.account_auth = True
+
         # end
 
 
@@ -75,3 +84,4 @@ class MyMD5PasswordHasher(MD5PasswordHasher):
 
 hash_identity_coder = MyMD5PasswordHasher(salt=global_info.YPPF_salt)
 hash_wechat_coder = MyMD5PasswordHasher(salt=global_info.wechat_salt)
+

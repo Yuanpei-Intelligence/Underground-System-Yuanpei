@@ -9,6 +9,13 @@ from django.db import transaction  # 原子化更改数据库
 from datetime import datetime, timedelta
 import os, time
 
+'''
+YWolfeee:
+utils.py中保存了一些比较杂碎的带有信息量的数据，例如对应表等。
+微信消息的发送、日志的写入也在本文件中，使用前可以看一下代码的说明。
+所有和scheduler无关、和互联网交互无关的工具函数，可以在本文件中实现。
+'''
+
 ip_room_dict = {
     "152": "B104",
     "155": "B104",

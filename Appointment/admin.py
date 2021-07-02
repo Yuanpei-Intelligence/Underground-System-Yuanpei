@@ -4,7 +4,7 @@ from django.utils.html import format_html, format_html_join
 from datetime import datetime, timedelta, timezone, time, date
 from django.http import JsonResponse  # Json响应
 from django.db import transaction  # 原子化更改数据库
-from Appointment.views import addAppoint,scheduler
+from Appointment.utils.scheduler_func import addAppoint,scheduler
 from Appointment.utils.utils import operation_writer,send_wechat_message
 from Appointment import global_info
                
