@@ -36,6 +36,7 @@ urlpatterns = [
     # csrf验证操作（待完善）
     #path('get-csrf', views.getToken, name='getToken'),
     path('index',views.index,name="index"),
+    path('', views.redirect, name='redirect'),
     path('arrange_time',views.arrange_time,name='arrange_time'),
     path('check_out',views.check_out,name='check_out'),
     path('admin-index.html', views.admin_index, name='admin_index'), #added by wxy

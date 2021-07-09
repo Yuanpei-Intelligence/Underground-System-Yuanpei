@@ -4,8 +4,8 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
 # mysql> create database yuanpei_underground charset=utf8mb4;
-# > python manage.py makemigrations
-# > python manage.py migrate
+# > python3 manage.py makemigrations
+# > python3 manage.py migrate
 # Django会给没有自增字段的表默认添加自增字段（id）
 
 class College_Announcement(models.Model):
