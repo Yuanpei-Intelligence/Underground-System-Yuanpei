@@ -89,14 +89,14 @@ DATABASES = {
     # 使用自己的数据库的时候请修改这里的配置
     # 注意underground数据库需要事先创建
     # mysql -u root -p
-    # create database yuanpei_underground charset='utf8';
+    # create database underground charset='utf8';
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'yuanpei_underground',
         'HOST': '127.0.0.1',
         'PORT': 3306,
         'USER': 'root',
-        'PASSWORD': 'lhw3395998', # modified by YHT
+        'PASSWORD': '4401024839', # modified by YHT
         # 'OPTIONS': {
         #     "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         # }
