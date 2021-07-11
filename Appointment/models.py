@@ -55,7 +55,7 @@ class Room(models.Model):
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约
-        SUSPENDED = 1  # 暂定使用
+        SUSPENDED = 1  # 暂停使用
         # FORBIDDEN = 2  # 禁止使用
 
     Rstatus = models.SmallIntegerField('房间状态',

@@ -146,7 +146,6 @@ def cancelFunction(request):  # 取消预约
         reverse("Appointment:admin_index") + "?warn_code=" + str(warn_code) +
         "&warning=" + warning)
 
-
 def addAppoint(contents):  # 添加预约, main function
 
     # 首先检查房间是否存在
@@ -182,8 +181,17 @@ def addAppoint(contents):  # 添加预约, main function
     # 检查人员信息
     try:
         #assert len(students) >= room.Rmin, f'at least {room.Rmin} students'
-        real_min = room.Rmin if datetime.now().date(
-        ) != contents['Astart'].date() else min(global_info.today_min, room.Rmin)
+
+        # ---- modify by lhw: 加入考虑临时预约的情况 ---- #
+        current_time = datetime.now()   # 获取当前时间，只获取一次，防止多次获取得到不同时间
+        if current_time.date() != contents['Astart'].date():    # 若不为当天
+            real_min = room.Rmin
+        else: # 当天，修改real_min（使用人数下限）
+            real_min = min(global_info.today_min, room.Rmin)
+            if (contents['Afinish'] - contents['Astart']).seconds < 30 * 60:
+                real_min = min(real_min, global_info.temporary_min)
+        # ----- modify end : 2021.7.10 ----- #
+
         assert len(students) + contents[
             'non_yp_num'] >= real_min, f'at least {room.Rmin} students'
     except Exception as e:
@@ -227,8 +235,15 @@ def addAppoint(contents):  # 添加预约, main function
         #Afinish = datetime.strptime(contents['Afinish'], '%Y-%m-%d %H:%M:%S')
         Astart = contents['Astart']
         Afinish = contents['Afinish']
-        assert Astart <= Afinish, 'Appoint time error'
-        assert Astart > datetime.now(), 'Appoint time error'
+        assert Astart <= Afinish, 'Appoint time error' 
+
+        # --- modify by lhw: Astart 可能比datetime.now小 --- #
+        
+        #assert Astart > datetime.now(), 'Appoint time error' 
+        assert Afinish > datetime.now(), 'Appoint time error'
+        
+        # --- modify end: 2021.7.10 --- #
+
     except Exception as e:
         return JsonResponse(
             {

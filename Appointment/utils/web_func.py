@@ -59,7 +59,7 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
     if appoint.Room.Rid == 'B214':                  # 暂时因无法识别躺姿导致的合格率下降
         original_qualified_rate -= 0.15             # 建议在0.1-0.2之间 前者最严 后者最宽松
     if appoint.Afinish - appoint.Astart < min31:    # 减少时间过短时前后未准时到的影响
-        original_qualified_rate -= 0.05             # 建议在0-0.1间 暂未打算投入使用
+        original_qualified_rate = 0             # 建议在0-0.1间 暂未打算投入使用 # lhw：将此应用到暂时预约上(2021.7.10)
     # if appoint.Areason == Appoint.Reason.R_LATE:    # 给未刷卡提供直接通过的机会
     #     original_qualified_rate += 0.25             # 建议在0.2-0.4之间 极端可考虑0.5 暂不使用
     return original_qualified_rate
