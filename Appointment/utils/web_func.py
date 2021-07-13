@@ -55,8 +55,11 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
     get_adjusted_qualified_rate(original_qualified_rate : float, appoint) -> float:
         return an adjusted qualified rate according to appoint state
     '''
+    min31 = timedelta(minutes=31)
     if appoint.Room.Rid == 'B214':                  # 暂时因无法识别躺姿导致的合格率下降
         original_qualified_rate -= 0.15             # 建议在0.1-0.2之间 前者最严 后者最宽松
+    if appoint.Afinish - appoint.Astart < min31:    # 减少时间过短时前后未准时到的影响
+        original_qualified_rate -= 0.05             # 建议在0-0.1间 暂未打算投入使用
     if appoint.Atemp_flag == 1:                 # 对于临时预约，不检查摄像头 by lhw（2021.7.13）
         original_qualified_rate = 0             
     # if appoint.Areason == Appoint.Reason.R_LATE:    # 给未刷卡提供直接通过的机会
