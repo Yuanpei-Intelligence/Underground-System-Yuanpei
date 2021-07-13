@@ -148,6 +148,9 @@ def cancelFunction(request):  # 取消预约
 
 def addAppoint(contents):  # 添加预约, main function
 
+    # 检查是否为临时预约 add by lhw (2021.7.13)
+    if 'Atemp_flag' not in contents.keys():
+        contents['Atemp_flag'] = False
     # 首先检查房间是否存在
     try:
         room = Room.objects.get(Rid=contents['Rid'])
@@ -188,7 +191,7 @@ def addAppoint(contents):  # 添加预约, main function
             real_min = room.Rmin
         else: # 当天，修改real_min（使用人数下限）
             real_min = min(global_info.today_min, room.Rmin)
-            if (contents['Afinish'] - contents['Astart']).seconds < 30 * 60:
+            if contents['Atemp_flag'] == True:
                 real_min = min(real_min, global_info.temporary_min)
         # ----- modify end : 2021.7.10 ----- #
 
@@ -327,7 +330,8 @@ def addAppoint(contents):  # 添加预约, main function
                               Aannouncement=contents['announcement'],
                               major_student=major_student,
                               Anon_yp_num=contents['non_yp_num'],
-                              Ayp_num=len(students))
+                              Ayp_num=len(students),
+                              Atemp_flag=contents['Atemp_flag'])
             appoint.save()
             for student in students:
                 appoint.students.add(student)

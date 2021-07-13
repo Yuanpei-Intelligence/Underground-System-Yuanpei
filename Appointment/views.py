@@ -452,6 +452,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             contents['non_yp_num'] = 0
             contents['Ausage'] = "临时预约"
             contents['announcement'] = "临时预约"
+            contents['Atemp_flag'] = True
 
             scheduler_func.addAppoint(contents)
             
