@@ -454,7 +454,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             contents['announcement'] = "临时预约"
             contents['Atemp_flag'] = True
 
-            scheduler_func.addAppoint(contents)
+            if (contents['Afinish'] - contents['Astart']) > timedelta(minutes=15):
+                scheduler_func.addAppoint(contents)
             
             # 第一次刷卡用于预约，第二次刷卡用于开门 #
             return JsonResponse({
