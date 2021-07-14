@@ -438,10 +438,10 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         contents['Sid'] = Sid
         contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, now_time.minute, 0) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
 
-        timeid = web_func.get_time_id(Room.objects.get(Rid=Rid), time(contents['Astart'].hour, contents['Astart'].minute))
-        endtime, valid = web_func.get_hour_time(Room.objects.get(Rid=Rid), timeid+1)
+        timeid = web_func.get_time_id(Room.objects.get(Rid=Rid), contents['Astart'])
+        endtime, valid = web_func.get_hour_time(Room.objects.get(Rid=Rid), timeid + 1)
 
-        contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(endtime.split(':')[0]), int(endtime.split(':')[1]), 0)
+        contents['Afinish'] = endtime
         contents['non_yp_num'] = 0
         contents['Ausage'] = "临时预约"
         contents['announcement'] = "临时预约"
