@@ -51,7 +51,8 @@ class Room(models.Model):
     Rfinish = models.TimeField('最迟预约时间')
     Rlatest_time = models.DateTimeField("摄像头心跳",auto_now_add=True)
     Rpresent = models.IntegerField('目前人数',default=0)
-
+    # Rcheck_status: 本分钟内检测状态，0 = 违约, 1 = 合格
+    Rcheck_status = models.IntegerField('检测状态', default=0)
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约

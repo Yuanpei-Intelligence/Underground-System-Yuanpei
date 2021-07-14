@@ -32,11 +32,6 @@ import Appointment.utils.web_func as web_func
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 from Appointment.utils.scheduler_func import scheduler
 import Appointment.utils.scheduler_func as scheduler_func
-
-
-# 验证时间戳
-import time
-
 # 注册启动以上schedule任务
 register_events(scheduler)
 scheduler.start()
@@ -66,25 +61,14 @@ Views.py 使用说明
 wklist = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 
-
 def identity_check(request):    # 判断用户是否是本人
     # 是否需要检测
-
     if global_info.account_auth:
 
         try:
-            return request.session['authenticated']
-        except:
-            pass
-
-        try:
             # 认证通过
-            d = datetime.utcnow()
-            t = time.mktime(datetime.timetuple(d))
-            assert float(t) - float(request.session['timeStamp']) < 3600.0
-            assert hash_identity_coder.verify(request.session['Sid'] + request.session['timeStamp'],
+            assert hash_identity_coder.verify(request.session['Sid'],
                                               request.session['Secret']) is True
-            request.session['authenticated'] = True
             return True
 
         except:
@@ -96,7 +80,6 @@ def identity_check(request):    # 判断用户是否是本人
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
     urls = global_info.login_url + "?origin=" + params
-    #urls = 'http://localhost:8000/' + "?origin=" + params
     if islogout:
         urls = urls + "&is_logout=1"
     return urls
@@ -171,6 +154,9 @@ def cameracheck(request):   # 摄像头post的后端函数
             status=400)
     now_time = datetime.now()
 
+    # 存储上一次的检测时间
+    room_previous_check_time = room.Rlatest_time
+    
     # 更新现在的人数、最近更新时间
     try:
         with transaction.atomic():
@@ -207,13 +193,31 @@ def cameracheck(request):   # 摄像头post的后端函数
                 # 检查人数：采样、判断、更新
                 # 人数在finishappoint中检查
                 rand = random.uniform(0, 1)
+                # rand = 0.9 # just for dubug
                 camera_lock.acquire()
                 with transaction.atomic():
                     if rand > 1 - global_info.check_rate:
-                        content.Acamera_check_num += 1
-                        if temp_stu_num >= num_need:
-                            content.Acamera_ok_num += 1
+                        # content.Acamera_check_num += 1
+                        # if temp_stu_num >= num_need:
+                        #     content.Acamera_ok_num += 1
+                        # content.save()
+                        if now_time.minute != room_previous_check_time.minute: #说明此时是新的一分钟
+                            room.Rcheck_status = 0
+                            content.Acamera_check_num += 1
+                            if temp_stu_num >= num_need: # 如果本次检测合规
+                                content.Acamera_ok_num += 1
+                                room.Rcheck_status = 1
+                        else: # 说明和上一次检测在同一分钟，此时希望：1、不增加检测次数 2、如果合规则增加ok次数
+                            if room.Rcheck_status == 0:
+                                # 当前不合规；如果这次检测合规，那么认为本分钟合规
+                                if temp_stu_num >= num_need:
+                                    content.Acamera_ok_num += 1
+                                    room.Rcheck_status = 1
+                            # else:当前已经合规，不需要额外操作
+                        # for debug
+                        # print(f"now time is: {now_time}\n total_check_num={content.Acamera_check_num}\n ok_num={content.Acamera_ok_num}\n\n")
                         content.save()
+                        room.save()
                 camera_lock.release()
                 # add end
         except Exception as e:
@@ -494,16 +498,13 @@ def index(request):  # 主页
 
     # 用户校验
     if global_info.account_auth:
-        # print("check", identity_check(request))
         if not identity_check(request):
             try:
                 if request.method == "GET":
                     stu_id_ming = request.GET['Sid']
                     stu_id_code = request.GET['Secret']
-                    timeStamp = request.GET['timeStamp']
                     request.session['Sid'] = stu_id_ming
                     request.session['Secret'] = stu_id_code
-                    request.session['timeStamp'] = timeStamp
                     assert identity_check(request) is True
 
                 else:  # POST 说明是display的修改,但是没登陆,自动错误
