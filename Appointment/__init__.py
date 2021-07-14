@@ -82,6 +82,23 @@ class MyMD5PasswordHasher(MD5PasswordHasher):
         encoded_2 = self.encode(password)
         return encoded.upper() == encoded_2.upper()
 
-hash_identity_coder = MyMD5PasswordHasher(salt=global_info.YPPF_salt)
-hash_wechat_coder = MyMD5PasswordHasher(salt=global_info.wechat_salt)
+class MySHA256Hasher(object):
+    def __init__(self, secret):
+        self.secret = secret
+
+    def encode(self, identifier):
+        assert identifier is not None
+        identifier = (identifier + self.secret).encode('utf-8')
+        return hashlib.sha256(identifier).hexdigest().upper()
+
+    def verify(self, identifier, encoded):
+        encoded_2 = self.encode(identifier)
+        print(encoded.upper(), encoded.upper())
+        return encoded.upper() == encoded_2.upper()
+        
+
+
+# hash_identity_coder = MyMD5PasswordHasher(salt=global_info.YPPF_salt)
+hash_identity_coder = MySHA256Hasher(secret=global_info.YPPF_salt)
+hash_wechat_coder = MySHA256Hasher(salt=global_info.wechat_salt)
 
