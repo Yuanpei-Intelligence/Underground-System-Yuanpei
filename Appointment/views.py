@@ -22,7 +22,7 @@ import random
 import threading
 
 # 全局参数读取
-from Appointment import global_info, hash_identity_coder
+from YPUnderground import global_info, hash_identity_coder
 
 # utils对接工具
 from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete
