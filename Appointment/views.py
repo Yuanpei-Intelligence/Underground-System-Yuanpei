@@ -79,7 +79,9 @@ def identity_check(request):    # 判断用户是否是本人
 
         try:
             # 认证通过
-            assert time.time() - float(request.session['timeStamp']) < 3600.0
+            d = datetime.utcnow()
+            t = time.mktime(datetime.timetuple(d))
+            assert float(t) - float(request.session['timeStamp']) < 3600.0
             assert hash_identity_coder.verify(request.session['Sid'] + request.session['timeStamp'],
                                               request.session['Secret']) is True
             request.session['authenticated'] = True
@@ -93,8 +95,8 @@ def identity_check(request):    # 判断用户是否是本人
 # 重定向到登录网站
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
-    # urls = global_info.login_url + "?origin=" + params
-    urls = 'http://localhost:8000/' + "?origin=" + params
+    urls = global_info.login_url + "?origin=" + params
+    #urls = 'http://localhost:8000/' + "?origin=" + params
     if islogout:
         urls = urls + "&is_logout=1"
     return urls

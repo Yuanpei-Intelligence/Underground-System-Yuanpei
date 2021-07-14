@@ -100,5 +100,5 @@ class MySHA256Hasher(object):
 
 # hash_identity_coder = MyMD5PasswordHasher(salt=global_info.YPPF_salt)
 hash_identity_coder = MySHA256Hasher(secret=global_info.YPPF_salt)
-hash_wechat_coder = MyMD5PasswordHasher(salt=global_info.wechat_salt)
+hash_wechat_coder = MySHA256Hasher(salt=global_info.wechat_salt)
 
