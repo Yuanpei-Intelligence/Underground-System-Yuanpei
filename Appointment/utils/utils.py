@@ -108,7 +108,8 @@ def doortoroom(door):
 
 # 给企业微信发送消息
 # update 0309:原来是返回状态码和错误信息，现在在这个函数中直接做错误处理，如果处理不了就写日志，不返回什么了
-from Appointment import hash_wechat_coder, global_info
+from YPUnderground import hash_wechat_coder
+
 
 send_message = requests.session()
 
