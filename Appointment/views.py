@@ -22,7 +22,7 @@ import random
 import threading
 
 # 全局参数读取
-from Appointment import global_info, hash_identity_coder
+from YPUnderground import global_info, hash_identity_coder
 
 # utils对接工具
 from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete
@@ -32,6 +32,11 @@ import Appointment.utils.web_func as web_func
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 from Appointment.utils.scheduler_func import scheduler
 import Appointment.utils.scheduler_func as scheduler_func
+
+
+# 验证时间戳
+import time
+
 # 注册启动以上schedule任务
 register_events(scheduler)
 scheduler.start()
@@ -61,14 +66,25 @@ Views.py 使用说明
 wklist = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 
+
 def identity_check(request):    # 判断用户是否是本人
     # 是否需要检测
+
     if global_info.account_auth:
 
         try:
+            return request.session['authenticated']
+        except:
+            pass
+
+        try:
             # 认证通过
-            assert hash_identity_coder.verify(request.session['Sid'],
+            d = datetime.utcnow()
+            t = time.mktime(datetime.timetuple(d))
+            assert float(t) - float(request.session['timeStamp']) < 3600.0
+            assert hash_identity_coder.verify(request.session['Sid'] + request.session['timeStamp'],
                                               request.session['Secret']) is True
+            request.session['authenticated'] = True
             return True
 
         except:
@@ -80,6 +96,7 @@ def identity_check(request):    # 判断用户是否是本人
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
     urls = global_info.login_url + "?origin=" + params
+    #urls = 'http://localhost:8000/' + "?origin=" + params
     if islogout:
         urls = urls + "&is_logout=1"
     return urls
@@ -521,13 +538,16 @@ def index(request):  # 主页
 
     # 用户校验
     if global_info.account_auth:
+        # print("check", identity_check(request))
         if not identity_check(request):
             try:
                 if request.method == "GET":
                     stu_id_ming = request.GET['Sid']
                     stu_id_code = request.GET['Secret']
+                    timeStamp = request.GET['timeStamp']
                     request.session['Sid'] = stu_id_ming
                     request.session['Secret'] = stu_id_code
+                    request.session['timeStamp'] = timeStamp
                     assert identity_check(request) is True
 
                 else:  # POST 说明是display的修改,但是没登陆,自动错误

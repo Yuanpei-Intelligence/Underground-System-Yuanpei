@@ -1,5 +1,5 @@
 import requests as requests
-from Appointment import global_info
+from YPUnderground import global_info
 from Appointment.models import Student, Room, Appoint, College_Announcement
 from django.db.models import Q  # modified by wxy
 from datetime import datetime, timedelta, timezone, time, date
