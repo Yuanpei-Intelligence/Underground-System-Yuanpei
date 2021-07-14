@@ -157,6 +157,10 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
         message = '【管理员操作】您有一条预约被判定违约\n'  # 类型
         message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
         message += '\n用途：'+usage+'\n人数：'+str(num)+'\n如有疑问请联系管理员'
+    elif message_type == 'temp_appointment': #临时预约
+        message = '您发起了一条临时预约\n'  
+        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
     else:
         # todo: 记得测试一下!为什么之前出问题的log就找不到呢TAT
         operation_writer(global_info.system_log,

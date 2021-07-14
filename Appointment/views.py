@@ -420,50 +420,43 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             and datetime.now() >= appoint.Astart-timedelta(minutes=15)
             and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
 
-    if len(appointments):  # 该房间目前有预约，分两种情况
-        # 情况1，该预约非该学生的，但该学生在下一个时间段有预约，且离预约开始不到15分钟，可以刷卡进入；
-        # 情况2，改预约为该学生的，自然可以刷卡进入
+    # 以下枚举所有无法开门情况
+    if len(appointments) and len(stu_appoint) == 0:
+        # 无法开门情况1：没有当前预约，或没有15分钟内开始的预约。
+        return JsonResponse(
+            {
+                "code": 1,
+                "openDoor": "false",
+            },
+            status=400)
+
+    if len(appointments) == 0 and len(stu_appoint) == 0:   
+        # 无法开门情况2：或许可以发起临时预约。
+        contents = {}
+        contents['Rid'] = Rid
+        contents['students'] = [Sid]
+        contents['Sid'] = Sid
+        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, now_time.minute, now_time.second) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
+
+        time1 = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, 29, 59)+timedelta(seconds=1)    # 第一个时段的终止
+        time2 = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, 59, 59)+timedelta(seconds=1)    # 第二个时段的终止
+
+        contents['Afinish'] = time1 if now_time < time1 else time2
+        contents['non_yp_num'] = 0
+        contents['Ausage'] = "临时预约"
+        contents['announcement'] = "临时预约"
+        contents['Atemp_flag'] = True
+
+        if (contents['Afinish'] - contents['Astart']) > timedelta(minutes=15):  # 为避免冲突，临时预约时长必须超过15分钟
+            scheduler_func.addAppoint(contents)
         
-        # 是这个房间and是今天的预约and在可开门时间范围内
-        if len(stu_appoint) == 0:
-            # 没有预约，或不在开门时间范围内
-            return JsonResponse(
-                {
-                    "code": 1,
-                    "openDoor": "false",
-                },
-                status=400)
-
-    else: # 该时段没有人预约，分两种情况
-        # 情况1，下一时段该学生有预约，且离预约开始不到15分钟，可以刷卡进入，不记作临时预约；
-        # 情况2，下一时段离当前超过15分钟，且该房间无人预约，记作临时预约。
-
-        if len(stu_appoint) == 0:   # 临时预约
-            contents = {}
-            contents['Rid'] = Rid
-            contents['students'] = [Sid]
-            contents['Sid'] = Sid
-            contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, now_time.minute, now_time.second) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
-
-            time1 = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, 29, 59)+timedelta(seconds=1)    # 第一个时段的终止
-            time2 = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, 59, 59)+timedelta(seconds=1)    # 第二个时段的终止
-
-            contents['Afinish'] = time1 if now_time < time1 else time2
-            contents['non_yp_num'] = 0
-            contents['Ausage'] = "临时预约"
-            contents['announcement'] = "临时预约"
-            contents['Atemp_flag'] = True
-
-            if (contents['Afinish'] - contents['Astart']) > timedelta(minutes=15):
-                scheduler_func.addAppoint(contents)
+        # 第一次刷卡用于预约，第二次刷卡用于开门 #
+        return JsonResponse({
+            "code": 0,
+            "openDoor": "false"
+        }, status=400)
             
-            # 第一次刷卡用于预约，第二次刷卡用于开门 #
-            return JsonResponse({
-                "code": 0,
-                "openDoor": "false"
-            }, status=400)
-            
-            
+    # 以下情况都能开门
     ### --- modify end (2021.7.10) --- #
     '''
     # check the camera
