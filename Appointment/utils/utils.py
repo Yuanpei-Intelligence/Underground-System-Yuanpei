@@ -2,7 +2,7 @@
 
 import requests as requests
 import json
-
+from YPUnderground import global_info
 import threading
 from Appointment.models import Student, Room, Appoint  # 数据库模型
 from django.db import transaction  # 原子化更改数据库
