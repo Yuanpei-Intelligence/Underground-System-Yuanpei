@@ -34,7 +34,6 @@ class Student(models.Model):
         verbose_name_plural = verbose_name
         ordering = ['Sid']
 
-
 class RoomManager(models.Manager):
     def permitted(self):
         return self.filter(Rstatus=Room.Status.PERMITTED)
@@ -222,6 +221,27 @@ class Appoint(models.Model):
             data['Rid'] = 'deleted'  # 房间编号
             data['Rtitle'] = '房间已删除'  # 房间名称
         return data
+
+class CardCheckInfo(models.Model):
+    # 这里Room使用外键的话只能设置DO_NOTHING，否则删除房间就会丢失预约信息
+    # 所以房间信息不能删除，只能逻辑删除
+    # 调用时使用appoint_obj.Room和room_obj.appoint_list
+    Cardroom = models.ForeignKey(Room,
+                             related_name='CardCheckInfo_list',
+                             null=True,
+                             on_delete=models.SET_NULL,
+                             verbose_name='房间号')
+    Cardstudent = models.ForeignKey(Student,on_delete=models.CASCADE,verbose_name='刷卡者',null=True)
+    Cardtime = models.DateTimeField('刷卡时间', auto_now_add=True)
+
+    class Status(models.IntegerChoices):
+        DOOR_CLOSE = 0  # 门没开
+        DOOR_OPEN = 1  # 门开了
+
+    CardStatus = models.SmallIntegerField('刷卡状态',
+                                       choices=Status.choices,
+                                       default=0)
+
 
 from Appointment.utils.scheduler_func import cancel_scheduler
 @receiver(pre_delete,sender=Appoint)

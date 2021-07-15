@@ -4,9 +4,10 @@ import requests as requests
 import json
 from YPUnderground import global_info
 import threading
-from Appointment.models import Student, Room, Appoint  # 数据库模型
+from Appointment.models import Student, Room, Appoint, CardCheckInfo  # 数据库模型
 from django.db import transaction  # 原子化更改数据库
 from datetime import datetime, timedelta
+from django.http import JsonResponse
 import os, time
 
 '''
@@ -347,3 +348,21 @@ def operation_writer(user, message, source, status_code="OK"):
         print(e)
         
     lock.release()
+
+def cardcheckinfo_writer(Student, Room, status):
+    try:
+        with transaction.atomic():
+            cardcheckinfo = CardCheckInfo(
+                Cardroom = Room,
+                Cardstudent = Student,
+                CardStatus = status
+            )
+            cardcheckinfo.save()
+    except Exception as e:
+        return JsonResponse(
+                {'statusInfo': {
+                    'message': '写入刷卡信息时出现错误',
+                    'detail': str(e)
+                }},
+                status=400)
+    return JsonResponse({'message':'成功写入刷卡信息'}, status=200)
