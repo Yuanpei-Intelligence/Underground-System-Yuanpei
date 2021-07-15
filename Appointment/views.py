@@ -438,6 +438,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
 
     # 以下枚举所有无法开门情况
+
     if len(appointments) and len(stu_appoint) == 0:
         # 无法开门情况1：没有当前预约，或没有15分钟内开始的预约。
         return JsonResponse(
@@ -458,31 +459,34 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         timeid = web_func.get_time_id(Room.objects.get(Rid=Rid), time(contents['Astart'].hour, contents['Astart'].minute))
         endtime, valid = web_func.get_hour_time(Room.objects.get(Rid=Rid), timeid+1)
 
+        # 注意，由于制度上不允许跨天预约，这里的逻辑也不支持跨日预约（比如从晚上23:00约到明天1:00）。
         contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(endtime.split(':')[0]), int(endtime.split(':')[1]), 0)
         contents['non_yp_num'] = 0
         contents['Ausage'] = "临时预约"
-        contents['announcement'] = "临时预约"
+        contents['announcement'] = ""
         contents['Atemp_flag'] = True
 
-        if (contents['Afinish'] - contents['Astart']) > timedelta(minutes=15):  # 为避免冲突，临时预约时长必须超过15分钟
-            try:
-                assert valid
-                scheduler_func.addAppoint(contents)
-            except Exception as e:
-                return JsonResponse(  # 非合法时间的预约
+        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:  # 为避免冲突，临时预约时长必须超过15分钟
+            response = scheduler_func.addAppoint(contents)
+            if response.status_code == 200:
+                stu_appoint = student.appoint_list.not_canceled()  
+                stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
+                    and appoint.Astart.date() == datetime.now().date()
+                    and datetime.now() >= appoint.Astart-timedelta(minutes=15)
+                    and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
+                # 更新stu_appoint
+            else:
+                return JsonResponse(  # 无法预约（比如没信用分了）
                 {
                     "code": 1,
-                    "openDoor": "false",
+                    "openDoor": "false"
                 },
-                status=400)
-                
-
-        
-        # 第一次刷卡用于预约，第二次刷卡用于开门 #
-        return JsonResponse({
-            "code": 0,
-            "openDoor": "false"
-        }, status=400)
+                status=400)        
+        else:       # 预约时长不超过15分钟 或 预约时间不合法
+            return JsonResponse({
+                "code": 1,
+                "openDoor": "false"
+            }, status=400)
             
     # 以下情况都能开门
     ### --- modify end (2021.7.10) --- #
