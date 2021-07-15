@@ -55,7 +55,7 @@ class Room(models.Model):
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约
-        SUSPENDED = 1  # 暂定使用
+        SUSPENDED = 1  # 暂停使用
         # FORBIDDEN = 2  # 禁止使用
 
     Rstatus = models.SmallIntegerField('房间状态',
@@ -126,7 +126,18 @@ class Appoint(models.Model):
     Areason = models.IntegerField('违约原因',
                                   choices=Reason.choices,
                                   default=0)
+    
     # end
+
+    # --- add by lhw --- #
+    class Bool_flag(models.IntegerChoices):
+        Yes = 1
+        No = 0
+    
+    Atemp_flag = models.SmallIntegerField('是否为临时预约',
+                                       choices=Bool_flag.choices,
+                                       default=0)
+    # --- end(2021.7.13) --- ##
 
     objects = AppointManager()
 
