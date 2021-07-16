@@ -2,7 +2,7 @@
 
 import requests as requests
 import json
-
+from YPUnderground import global_info
 import threading
 from Appointment.models import Student, Room, Appoint  # 数据库模型
 from django.db import transaction  # 原子化更改数据库
@@ -108,7 +108,8 @@ def doortoroom(door):
 
 # 给企业微信发送消息
 # update 0309:原来是返回状态码和错误信息，现在在这个函数中直接做错误处理，如果处理不了就写日志，不返回什么了
-from Appointment import hash_wechat_coder, global_info
+from YPUnderground import hash_wechat_coder
+
 
 send_message = requests.session()
 
@@ -157,6 +158,10 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
         message = '【管理员操作】您有一条预约被判定违约\n'  # 类型
         message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
         message += '\n用途：'+usage+'\n人数：'+str(num)+'\n如有疑问请联系管理员'
+    elif message_type == 'temp_appointment': #临时预约
+        message = '您发起了一条临时预约\n'  
+        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
     else:
         # todo: 记得测试一下!为什么之前出问题的log就找不到呢TAT
         operation_writer(global_info.system_log,

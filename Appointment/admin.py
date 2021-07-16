@@ -6,7 +6,7 @@ from django.http import JsonResponse  # Json响应
 from django.db import transaction  # 原子化更改数据库
 from Appointment.utils.scheduler_func import addAppoint,scheduler
 from Appointment.utils.utils import operation_writer,send_wechat_message
-from Appointment import global_info
+from YPUnderground import global_info
                
 
 import pypinyin

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 from django.utils.translation import gettext_lazy as _
+from YPUnderground import global_info
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -92,11 +93,11 @@ DATABASES = {
     # create database underground charset='utf8';
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'yuanpei_underground',
+        'NAME': global_info.json['database']['NAME'],
         'HOST': '127.0.0.1',
         'PORT': 3306,
-        'USER': 'root',
-        'PASSWORD': '4401024839', # modified by YHT
+        'USER': global_info.json['database']['USER'],
+        'PASSWORD': global_info.json['database']['PASSWORD'], # modified by YHT
         # 'OPTIONS': {
         #     "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         # }
