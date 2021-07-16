@@ -54,13 +54,6 @@ class Room(models.Model):
     Rlatest_time = models.DateTimeField("摄像头心跳", auto_now_add=True)
     Rpresent = models.IntegerField('目前人数', default=0)
 
-    # Check_status: 分钟内检测状态
-    class Check_status(models.IntegerChoices):
-        FAILED = 0  # 在此分钟的检查尚未通过
-        PASSED = 1  # 在特定分钟内的检查是通过的
-    Rcheck_status = models.SmallIntegerField(
-        '检测状态', choices=Check_status.choices, default=0)
-
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约
@@ -98,6 +91,13 @@ class Appoint(models.Model):
         '预约通知', max_length=256, null=True, blank=True)
     Anon_yp_num = models.IntegerField("外院人数", default=0)
     Ayp_num = models.IntegerField('院内人数', default=0)
+
+    # Check_status: 分钟内检测状态
+    class Check_status(models.IntegerChoices):
+        FAILED = 0  # 预约在此分钟的检查尚未通过
+        PASSED = 1  # 预约在特定分钟内的检查是通过的
+    Acheck_status = models.SmallIntegerField(
+        '检测状态', choices=Check_status.choices, default=0)
 
     # 这里Room使用外键的话只能设置DO_NOTHING，否则删除房间就会丢失预约信息
     # 所以房间信息不能删除，只能逻辑删除

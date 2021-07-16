@@ -219,20 +219,19 @@ def cameracheck(request):   # 摄像头post的后端函数
                         # if temp_stu_num >= num_need:
                         #     content.Acamera_ok_num += 1
                         if now_time.minute != room_previous_check_time.minute:  # 说明此时是新的一分钟
-                            room.Rcheck_status = Room.Check_status.FAILED
+                            content.Acheck_status = Appoint.Check_status.FAILED
                             content.Acamera_check_num += 1
                             if temp_stu_num >= num_need:  # 如果本次检测合规
                                 content.Acamera_ok_num += 1
-                                room.Rcheck_status = Room.Check_status.PASSED
+                                content.Acheck_status = Appoint.Check_status.PASSED
                         else:  # 说明和上一次检测在同一分钟，此时希望：1、不增加检测次数 2、如果合规则增加ok次数
-                            if room.Rcheck_status == Room.Check_status.FAILED:
+                            if content.Acheck_status == Appoint.Check_status.FAILED:
                                 # 当前不合规；如果这次检测合规，那么认为本分钟合规
                                 if temp_stu_num >= num_need:
                                     content.Acamera_ok_num += 1
-                                    room.Rcheck_status = Room.Check_status.PASSED
+                                    content.Acheck_status = Appoint.Check_status.PASSED
                             # else:当前已经合规，不需要额外操作
                         content.save()
-                        room.save()
                 camera_lock.release()
                 # add end
         except Exception as e:
