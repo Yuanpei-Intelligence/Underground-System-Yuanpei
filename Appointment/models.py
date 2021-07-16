@@ -8,7 +8,6 @@ from django.dispatch import receiver
 # > python manage.py migrate
 # Django会给没有自增字段的表默认添加自增字段（id）
 
-
 class College_Announcement(models.Model):
     class Show_Status(models.IntegerChoices):
         Yes = 1
@@ -22,7 +21,6 @@ class College_Announcement(models.Model):
     class Meta:
         verbose_name = "全院公告"
         verbose_name_plural = verbose_name
-
 
 class Student(models.Model):
     Sid = models.CharField('学号', max_length=10, primary_key=True)
@@ -53,10 +51,10 @@ class Room(models.Model):
     Rfinish = models.TimeField('最迟预约时间')
     Rlatest_time = models.DateTimeField("摄像头心跳", auto_now_add=True)
     Rpresent = models.IntegerField('目前人数', default=0)
-    
-    # Check_status: 分钟内检测状态
+
+    # RCheck_status: 分钟内检测状态
     class Check_status(models.IntegerChoices):
-        FAILED = 0  # 在此分钟的检查尚未通过
+        FAILED = 0  # 在特定分钟的检查尚未通过
         PASSED = 1  # 在特定分钟内的检查是通过的
     Rcheck_status = models.SmallIntegerField(
         '检测状态', choices=Check_status.choices, default=0)
@@ -64,7 +62,7 @@ class Room(models.Model):
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约
-        SUSPENDED = 1  # 暂定使用
+        SUSPENDED = 1  # 暂停使用
         # FORBIDDEN = 2  # 禁止使用
 
     Rstatus = models.SmallIntegerField('房间状态',
@@ -138,7 +136,18 @@ class Appoint(models.Model):
     Areason = models.IntegerField('违约原因',
                                   choices=Reason.choices,
                                   default=0)
+
     # end
+
+    # --- add by lhw --- #
+    class Bool_flag(models.IntegerChoices):
+        Yes = 1
+        No = 0
+
+    Atemp_flag = models.SmallIntegerField('是否为临时预约',
+                                          choices=Bool_flag.choices,
+                                          default=0)
+    # --- end(2021.7.13) --- ##
 
     objects = AppointManager()
 

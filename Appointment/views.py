@@ -77,8 +77,6 @@ def identity_check(request):    # 判断用户是否是本人
         return True
 
 # 重定向到登录网站
-
-
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
     urls = global_info.login_url + "?origin=" + params
@@ -134,7 +132,6 @@ def getAppoint(request):    # 班牌机对接程序
                 "empty": 0
             }, status=200)
 
-
 camera_lock = threading.RLock()
 
 
@@ -146,8 +143,8 @@ def cameracheck(request):   # 摄像头post的后端函数
         ip = request.META.get("REMOTE_ADDR")
         temp_stu_num = int(
             eval(request.body.decode('unicode-escape'))['body']['people_num'])
-        # rid = iptoroom(ip.split(".")[3])  # !!!!!
-        rid = 'B221'  # just for debug
+        rid = iptoroom(ip.split(".")[3])  # !!!!!
+        # rid = 'B221'  # just for debug
         room = Room.objects.get(Rid=rid)  # 获取摄像头信号
         num_need = room.Rmin  # 最小房间人数
     except:
@@ -180,6 +177,7 @@ def cameracheck(request):   # 摄像头post的后端函数
     appointments = Appoint.objects.not_canceled().filter(
         Q(Astart__lte=now_time) & Q(Afinish__gte=now_time)
         & Q(Room_id=rid))  # 只选取状态在1，2之间的预约
+
     if len(appointments):  # 如果有，只能有一个预约
         content = appointments[0]
         if content.Atime.date() == content.Astart.date():
@@ -195,31 +193,27 @@ def cameracheck(request):   # 摄像头post的后端函数
                 # 检查人数：采样、判断、更新
                 # 人数在finishappoint中检查
                 rand = random.uniform(0, 1)
-                rand = 0.9  # just for dubug
+                # rand = 0.9  # just for debug
                 camera_lock.acquire()
                 with transaction.atomic():
                     if rand > 1 - global_info.check_rate:
-
                         # content.Acamera_check_num += 1
                         # if temp_stu_num >= num_need:
                         #     content.Acamera_ok_num += 1
                         # content.save()
-                        if now_time.minute != room_previous_check_time.minute:  # 说明此时是新的一分钟
+                        if now_time.minute != room_previous_check_time.minute: #说明此时是新的一分钟
                             room.Rcheck_status = Room.Check_status.FAILED
                             content.Acamera_check_num += 1
-                            if temp_stu_num >= num_need:  # 如果本次检测合规
+                            if temp_stu_num >= num_need: # 如果本次检测合规
                                 content.Acamera_ok_num += 1
                                 room.Rcheck_status = Room.Check_status.PASSED
-                        else:  # 说明和上一次检测在同一分钟，此时希望：1、不增加检测次数 2、如果合规则增加ok次数
+                        else: # 说明和上一次检测在同一分钟，此时希望：1、不增加检测次数 2、如果合规则增加ok次数
                             if room.Rcheck_status == Room.Check_status.FAILED:
                                 # 当前不合规；如果这次检测合规，那么认为本分钟合规
                                 if temp_stu_num >= num_need:
                                     content.Acamera_ok_num += 1
                                     room.Rcheck_status = Room.Check_status.PASSED
                             # else:当前已经合规，不需要额外操作
-                        # for debug
-                        print(
-                            f"now time is: {now_time}\n total_check_num={content.Acamera_check_num}\n ok_num={content.Acamera_ok_num}\n\n")
                         content.save()
                         room.save()
                 camera_lock.release()
@@ -257,7 +251,6 @@ def cancelAppoint(request):
     if not identity_check(request):
         return redirect(direct_to_login(request))
     return scheduler_func.cancelFunction(request)
-
 
 @csrf_exempt
 def display_getappoint(request):    # 用于为班牌机提供展示预约的信息
@@ -432,18 +425,24 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             status=400)
 
     # 检查预约者和房间是否匹配
-    contents = {'Sid': str(Sid), 'kind': 'today'}
-    stu_appoint = student.appoint_list.not_canceled()
+    # contents = {'Sid': str(Sid), 'kind': 'today'}
 
-    # 获取预约者今天的全部预约
+    # --- modify by lhw: 临时预约 --- #
+    now_time = datetime.now()
+    appointments = Appoint.objects.not_canceled().filter(
+        Q(Astart__lte=now_time) & Q(Afinish__gte=now_time)
+        & Q(Room_id=Rid))  # 只选取当前时间位于预约时间段内的预约
+    stu_appoint = student.appoint_list.not_canceled()
+    # 获取刷卡者当前房间的可进行预约
     stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
                    and appoint.Astart.date() == datetime.now().date()
                    and datetime.now() >= appoint.Astart-timedelta(minutes=15)
                    and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
 
-    # 是这个房间and是今天的预约and在可开门时间范围内
-    if len(stu_appoint) == 0:
-        # 没有预约，或不在开门时间范围内
+    # 以下枚举所有无法开门情况
+
+    if len(appointments) and len(stu_appoint) == 0:
+        # 无法开门情况1：没有当前预约，或没有15分钟内开始的预约。
         return JsonResponse(
             {
                 "code": 1,
@@ -451,34 +450,79 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             },
             status=400)
 
-    else:  # 到这里的一定是可以开门的
-        '''
-        # check the camera
-        journal = open("journal.txt","a")
-        journal.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        # journal.write('\t'+room.Rid+'\t')
-        journal.write("开门\n")
-        journal.close()
-        '''
-        try:
-            with transaction.atomic():
-                for now_appoint in stu_appoint:
-                    if (now_appoint.Astatus == Appoint.Status.APPOINTED and datetime.now() <=
-                            now_appoint.Astart + timedelta(minutes=15)):
-                        now_appoint.Astatus = Appoint.Status.PROCESSING
-                        now_appoint.save()
-        except Exception as e:
-            operation_writer(global_info.system_log,
-                             "可以开门却不开门的致命错误，房间号为" +
-                             str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
-                             "func[doorcheck]",
-                             "Error")
-            return JsonResponse(  # 未知错误
-                {
-                    "code": 1,
-                    "openDoor": "false",
-                },
-                status=400)
+    if len(appointments) == 0 and len(stu_appoint) == 0:
+        # 无法开门情况2：或许可以发起临时预约。
+        contents = {}
+        contents['Rid'] = Rid
+        contents['students'] = [Sid]
+        contents['Sid'] = Sid
+        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day,
+                                      now_time.hour, now_time.minute, 0)  # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
+        timeid = web_func.get_time_id(Room.objects.get(Rid=Rid), time(
+            contents['Astart'].hour, contents['Astart'].minute))
+        endtime, valid = web_func.get_hour_time(
+            Room.objects.get(Rid=Rid), timeid+1)
+
+        # 注意，由于制度上不允许跨天预约，这里的逻辑也不支持跨日预约（比如从晚上23:00约到明天1:00）。
+        contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(
+            endtime.split(':')[0]), int(endtime.split(':')[1]), 0)
+        contents['non_yp_num'] = 0
+        contents['Ausage'] = "临时预约"
+        contents['announcement'] = ""
+        contents['Atemp_flag'] = True
+
+        # 为避免冲突，临时预约时长必须超过15分钟
+        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:
+            response = scheduler_func.addAppoint(contents)
+            if response.status_code == 200:
+                stu_appoint = student.appoint_list.not_canceled()
+                stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
+                               and appoint.Astart.date() == datetime.now().date()
+                               and datetime.now() >= appoint.Astart-timedelta(minutes=15)
+                               and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
+                # 更新stu_appoint
+            else:
+                return JsonResponse(  # 无法预约（比如没信用分了）
+                    {
+                        "code": 1,
+                        "openDoor": "false"
+                    },
+                    status=400)
+        else:       # 预约时长不超过15分钟 或 预约时间不合法
+            return JsonResponse({
+                "code": 1,
+                "openDoor": "false"
+            }, status=400)
+
+    # 以下情况都能开门
+    ### --- modify end (2021.7.10) --- #
+    '''
+    # check the camera
+    journal = open("journal.txt","a")
+    journal.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    # journal.write('\t'+room.Rid+'\t')
+    journal.write("开门\n")
+    journal.close()
+    '''
+    try:
+        with transaction.atomic():
+            for now_appoint in stu_appoint:
+                if (now_appoint.Astatus == Appoint.Status.APPOINTED and datetime.now() <=
+                        now_appoint.Astart + timedelta(minutes=15)):
+                    now_appoint.Astatus = Appoint.Status.PROCESSING
+                    now_appoint.save()
+    except Exception as e:
+        operation_writer(global_info.system_log,
+                         "可以开门却不开门的致命错误，房间号为" +
+                         str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
+                         "func[doorcheck]",
+                         "Error")
+        return JsonResponse(  # 未知错误
+            {
+                "code": 1,
+                "openDoor": "false",
+            },
+            status=400)
     return JsonResponse({
         "code": 0,
         "openDoor": "true"
