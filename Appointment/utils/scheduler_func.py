@@ -146,9 +146,11 @@ def cancelFunction(request):  # 取消预约
         reverse("Appointment:admin_index") + "?warn_code=" + str(warn_code) +
         "&warning=" + warning)
 
-
 def addAppoint(contents):  # 添加预约, main function
 
+    # 检查是否为临时预约 add by lhw (2021.7.13)
+    if 'Atemp_flag' not in contents.keys():
+        contents['Atemp_flag'] = False
     # 首先检查房间是否存在
     try:
         room = Room.objects.get(Rid=contents['Rid'])
@@ -182,8 +184,17 @@ def addAppoint(contents):  # 添加预约, main function
     # 检查人员信息
     try:
         #assert len(students) >= room.Rmin, f'at least {room.Rmin} students'
-        real_min = room.Rmin if datetime.now().date(
-        ) != contents['Astart'].date() else min(global_info.today_min, room.Rmin)
+
+        # ---- modify by lhw: 加入考虑临时预约的情况 ---- #
+        current_time = datetime.now()   # 获取当前时间，只获取一次，防止多次获取得到不同时间
+        if current_time.date() != contents['Astart'].date():    # 若不为当天
+            real_min = room.Rmin
+        elif contents['Atemp_flag'] == False:                  # 当天预约，放宽限制
+            real_min = min(room.Rmin, global_info.today_min)
+        else:                                                   # 临时预约，放宽限制
+            real_min = min(room.Rmin, global_info.temporary_min)
+        # ----- modify end : 2021.7.10 ----- #
+
         assert len(students) + contents[
             'non_yp_num'] >= real_min, f'at least {room.Rmin} students'
     except Exception as e:
@@ -227,8 +238,15 @@ def addAppoint(contents):  # 添加预约, main function
         #Afinish = datetime.strptime(contents['Afinish'], '%Y-%m-%d %H:%M:%S')
         Astart = contents['Astart']
         Afinish = contents['Afinish']
-        assert Astart <= Afinish, 'Appoint time error'
-        assert Astart > datetime.now(), 'Appoint time error'
+        assert Astart <= Afinish, 'Appoint time error' 
+
+        # --- modify by lhw: Astart 可能比datetime.now小 --- #
+        
+        #assert Astart > datetime.now(), 'Appoint time error' 
+        assert Afinish > datetime.now(), 'Appoint time error'
+        
+        # --- modify end: 2021.7.10 --- #
+
     except Exception as e:
         return JsonResponse(
             {
@@ -312,7 +330,8 @@ def addAppoint(contents):  # 添加预约, main function
                               Aannouncement=contents['announcement'],
                               major_student=major_student,
                               Anon_yp_num=contents['non_yp_num'],
-                              Ayp_num=len(students))
+                              Ayp_num=len(students),
+                              Atemp_flag=contents['Atemp_flag'])
             appoint.save()
             for student in students:
                 appoint.students.add(student)
@@ -324,7 +343,23 @@ def addAppoint(contents):  # 添加预约, main function
                               id=f'{appoint.Aid}_finish',
                               next_run_time=Afinish)  # - timedelta(minutes=45))
             # write by cdf end2
-            if datetime.now() <= appoint.Astart - timedelta(minutes=15):  # 距离预约开始还有15分钟以上，提醒有新预约&定时任务
+            # add by lhw : 临时预约 # 
+            if appoint.Atemp_flag == True:
+                scheduler.add_job(utils.send_wechat_message,
+                                  args=[students_id,
+                                        appoint.Astart,
+                                        appoint.Room,
+                                        "temp_appointment",
+                                        appoint.major_student.Sname,
+                                        appoint.Ausage,
+                                        appoint.Aannouncement,
+                                        appoint.Anon_yp_num+appoint.Ayp_num,
+                                        '',
+                                        # appoint.major_student.Scredit,
+                                        ],
+                                  id=f'{appoint.Aid}_new_wechat',
+                                  next_run_time=datetime.now() + timedelta(seconds=5))
+            elif datetime.now() <= appoint.Astart - timedelta(minutes=15):  # 距离预约开始还有15分钟以上，提醒有新预约&定时任务
                 print('距离预约开始还有15分钟以上，提醒有新预约&定时任务', contents['new_require'])
                 if contents['new_require'] == 1:  # 只有在非长线预约中才添加这个job
                     scheduler.add_job(utils.send_wechat_message,

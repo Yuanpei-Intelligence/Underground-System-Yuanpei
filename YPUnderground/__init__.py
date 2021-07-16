@@ -53,6 +53,8 @@ class LongTermInfo():
 
         # 表示当天预约时放宽的人数下限
         self.today_min = 2
+        # 表示临时预约放宽的人数下限
+        self.temporary_min = 1
         # 是否允许不存在学生自动注册
         self.allow_newstu_appoint = True
 

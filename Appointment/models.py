@@ -136,17 +136,28 @@ class Appoint(models.Model):
     Areason = models.IntegerField('违约原因',
                                   choices=Reason.choices,
                                   default=0)
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 608c7aae3e42f994b5d47d2c0c3b619fb645166a
     # end
 
     # --- add by lhw --- #
     class Bool_flag(models.IntegerChoices):
         Yes = 1
         No = 0
+<<<<<<< HEAD
 
     Atemp_flag = models.SmallIntegerField('是否为临时预约',
                                           choices=Bool_flag.choices,
                                           default=0)
+=======
+    
+    Atemp_flag = models.SmallIntegerField('是否为临时预约',
+                                       choices=Bool_flag.choices,
+                                       default=0)
+>>>>>>> 608c7aae3e42f994b5d47d2c0c3b619fb645166a
     # --- end(2021.7.13) --- ##
 
     objects = AppointManager()
