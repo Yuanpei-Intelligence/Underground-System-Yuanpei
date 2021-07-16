@@ -235,7 +235,7 @@ class Appoint(models.Model):
             data['Rtitle'] = '房间已删除'  # 房间名称
         return data
 
-
+from Appointment.utils.scheduler_func import cancel_scheduler
 @receiver(pre_delete, sender=Appoint)
 def before_delete_Appoint(sender, instance, **kwargs):
     cancel_scheduler(instance.Aid)
