@@ -1,4 +1,3 @@
-from Appointment.utils.scheduler_func import cancel_scheduler
 from django.db import models
 
 from django.db.models.signals import pre_delete
