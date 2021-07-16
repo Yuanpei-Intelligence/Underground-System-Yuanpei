@@ -35,7 +35,7 @@ import Appointment.utils.scheduler_func as scheduler_func
 
 
 # 验证时间戳
-import time
+from time import mktime
 
 # 注册启动以上schedule任务
 register_events(scheduler)
@@ -80,7 +80,7 @@ def identity_check(request):    # 判断用户是否是本人
         try:
             # 认证通过
             d = datetime.utcnow()
-            t = time.mktime(datetime.timetuple(d))
+            t = mktime(datetime.timetuple(d))
             assert float(t) - float(request.session['timeStamp']) < 3600.0
             assert hash_identity_coder.verify(request.session['Sid'] + request.session['timeStamp'],
                                               request.session['Secret']) is True
@@ -458,7 +458,6 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         contents['students'] = [Sid]
         contents['Sid'] = Sid
         contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, now_time.minute, 0) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
-        from datetime import time
         timeid = web_func.get_time_id(room, time(contents['Astart'].hour, contents['Astart'].minute))
         endtime, valid = web_func.get_hour_time(room, timeid+1)
 
