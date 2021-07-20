@@ -66,7 +66,6 @@ Views.py 使用说明
 wklist = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 
-
 def identity_check(request):    # 判断用户是否是本人
     # 是否需要检测
 
@@ -93,6 +92,8 @@ def identity_check(request):    # 判断用户是否是本人
         return True
 
 # 重定向到登录网站
+
+
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
     urls = global_info.login_url + "?origin=" + params
@@ -106,7 +107,7 @@ def obj2json(obj):
     return list(obj.values())
 
 
-#def getToken(request):
+# def getToken(request):
 #    return JsonResponse({'token': get_token(request)})
 
 
@@ -149,6 +150,7 @@ def getAppoint(request):    # 班牌机对接程序
                 "empty": 0
             }, status=200)
 
+
 camera_lock = threading.RLock()
 
 
@@ -170,6 +172,9 @@ def cameracheck(request):   # 摄像头post的后端函数
         }},
             status=400)
     now_time = datetime.now()
+
+    # 存储上一次的检测时间
+    room_previous_check_time = room.Rlatest_time
 
     # 更新现在的人数、最近更新时间
     try:
@@ -210,9 +215,22 @@ def cameracheck(request):   # 摄像头post的后端函数
                 camera_lock.acquire()
                 with transaction.atomic():
                     if rand > 1 - global_info.check_rate:
-                        content.Acamera_check_num += 1
-                        if temp_stu_num >= num_need:
-                            content.Acamera_ok_num += 1
+                        # content.Acamera_check_num += 1
+                        # if temp_stu_num >= num_need:
+                        #     content.Acamera_ok_num += 1
+                        if now_time.minute != room_previous_check_time.minute:  # 说明此时是新的一分钟
+                            content.Acheck_status = Appoint.Check_status.FAILED
+                            content.Acamera_check_num += 1
+                            if temp_stu_num >= num_need:  # 如果本次检测合规
+                                content.Acamera_ok_num += 1
+                                content.Acheck_status = Appoint.Check_status.PASSED
+                        else:  # 说明和上一次检测在同一分钟，此时希望：1、不增加检测次数 2、如果合规则增加ok次数
+                            if content.Acheck_status == Appoint.Check_status.FAILED:
+                                # 当前不合规；如果这次检测合规，那么认为本分钟合规
+                                if temp_stu_num >= num_need:
+                                    content.Acamera_ok_num += 1
+                                    content.Acheck_status = Appoint.Check_status.PASSED
+                            # else:当前已经合规，不需要额外操作
                         content.save()
                 camera_lock.release()
                 # add end
@@ -241,6 +259,7 @@ def cameracheck(request):   # 摄像头post的后端函数
     else:  # 否则的话 相当于没有预约 正常返回
         return JsonResponse({}, status=200)  # 返回空就好
 
+
 @require_POST
 @csrf_exempt
 def cancelAppoint(request):
@@ -248,6 +267,7 @@ def cancelAppoint(request):
     if not identity_check(request):
         return redirect(direct_to_login(request))
     return scheduler_func.cancelFunction(request)
+
 
 @csrf_exempt
 def display_getappoint(request):    # 用于为班牌机提供展示预约的信息
@@ -433,12 +453,12 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     appointments = Appoint.objects.not_canceled().filter(
         Q(Astart__lte=now_time) & Q(Afinish__gte=now_time)
         & Q(Room_id=Rid))  # 只选取当前时间位于预约时间段内的预约
-    stu_appoint = student.appoint_list.not_canceled()  
+    stu_appoint = student.appoint_list.not_canceled()
     # 获取刷卡者当前房间的可进行预约
     stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
-            and appoint.Astart.date() == datetime.now().date()
-            and datetime.now() >= appoint.Astart-timedelta(minutes=15)
-            and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
+                   and appoint.Astart.date() == datetime.now().date()
+                   and datetime.now() >= appoint.Astart-timedelta(minutes=15)
+                   and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
 
     # 以下枚举所有无法开门情况
     if len(appointments) and len(stu_appoint) == 0:
@@ -451,7 +471,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             },
             status=400)
 
-    if len(appointments) == 0 and len(stu_appoint) == 0:   
+    if len(appointments) == 0 and len(stu_appoint) == 0:
         # 无法开门情况2：或许可以发起临时预约。
         contents = {}
         contents['Rid'] = Rid
@@ -462,7 +482,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         endtime, valid = web_func.get_hour_time(room, timeid+1)
 
         # 注意，由于制度上不允许跨天预约，这里的逻辑也不支持跨日预约（比如从晚上23:00约到明天1:00）。
-        contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(endtime.split(':')[0]), int(endtime.split(':')[1]), 0)
+        contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(
+            endtime.split(':')[0]), int(endtime.split(':')[1]), 0)
         contents['non_yp_num'] = 0
         contents['Ausage'] = "临时预约"
         contents['announcement'] = ""
@@ -470,27 +491,27 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:  # 为避免冲突，临时预约时长必须超过15分钟
             response = scheduler_func.addAppoint(contents)
             if response.status_code == 200:
-                stu_appoint = student.appoint_list.not_canceled()  
+                stu_appoint = student.appoint_list.not_canceled()
                 stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
-                    and appoint.Astart.date() == datetime.now().date()
-                    and datetime.now() >= appoint.Astart-timedelta(minutes=15)
-                    and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
+                               and appoint.Astart.date() == datetime.now().date()
+                               and datetime.now() >= appoint.Astart-timedelta(minutes=15)
+                               and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
                 # 更新stu_appoint
             else:
                 cardcheckinfo_writer(student, room, False)
                 return JsonResponse(  # 无法预约（比如没信用分了）
-                {
-                    "code": 1,
-                    "openDoor": "false"
-                },
-                status=400)        
+                    {
+                        "code": 1,
+                        "openDoor": "false"
+                    },
+                    status=400)
         else:       # 预约时长不超过15分钟 或 预约时间不合法
             cardcheckinfo_writer(student, room, False)
             return JsonResponse({
                 "code": 1,
                 "openDoor": "false"
             }, status=400)
-            
+
     # 以下情况都能开门
     ### --- modify end (2021.7.10) --- #
     '''
@@ -528,6 +549,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     }, status=200)
 
 # tag searchindex
+
+
 @csrf_exempt
 def index(request):  # 主页
     search_code = 0
@@ -661,6 +684,8 @@ def index(request):  # 主页
     return render(request, 'Appointment/index.html', locals())
 
 # tag searcharrange_time
+
+
 def arrange_time(request):
     if not identity_check(request):
         return redirect(direct_to_login(request))
@@ -679,7 +704,8 @@ def arrange_time(request):
 
     dayrange_list = web_func.get_dayrange()
     # 观察总共有多少个时间段
-    time_range = web_func.get_time_id(room_object, room_object.Rfinish, mode="leftopen")
+    time_range = web_func.get_time_id(
+        room_object, room_object.Rfinish, mode="leftopen")
     for day in dayrange_list:  # 对每一天 读取相关的展示信息
         day['timesection'] = []
         temp_hour, temp_minute = room_object.Rstart.hour, int(
@@ -710,7 +736,7 @@ def arrange_time(request):
 
     for appoint_record in appoints:
         change_id_list = web_func.timerange2idlist(Rid, appoint_record.Astart,
-                                          appoint_record.Afinish, time_range)
+                                                   appoint_record.Afinish, time_range)
         for day in dayrange_list:
             if appoint_record.Astart.date() == date(day['year'], day['month'],
                                                     day['day']):
@@ -727,6 +753,8 @@ def arrange_time(request):
     return render(request, 'Appointment/booking.html', locals())
 
 # tag searcharrange_talk
+
+
 def arrange_talk_room(request):
 
     if not identity_check(request):
@@ -824,6 +852,8 @@ def arrange_talk_room(request):
     return render(request, 'Appointment/booking-talk.html', locals())
 
 # tag searchcheck_out
+
+
 def check_out(request):  # 预约表单提交
     if not identity_check(request):
         return redirect(direct_to_login(request))
@@ -922,7 +952,8 @@ def check_out(request):  # 预约表单提交
         if warn_code != 1:
             # 增加contents内容，这里添加的预约需要所有提醒，所以contents['new_require'] = 1
             contents['new_require'] = 1
-            response = scheduler_func.addAppoint(contents)  # 否则没必要执行 并且有warn_code&message
+            response = scheduler_func.addAppoint(
+                contents)  # 否则没必要执行 并且有warn_code&message
 
             if response.status_code == 200:  # 成功预约
                 urls = reverse(
