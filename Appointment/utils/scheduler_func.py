@@ -45,7 +45,6 @@ def clear_appointments():
         utils.operation_writer(global_info.system_log, "定时删除任务成功", "func[clear_appointments]")
 
 
-
 def cancel_scheduler(aid):  # models.py中使用
     try:
         scheduler.remove_job(f'{aid}_finish')
@@ -63,7 +62,6 @@ def cancel_scheduler(aid):  # models.py中使用
         }},
             json_dumps_params={'ensure_ascii': False},
             status=400)
-
 
 
 def cancelFunction(request):  # 取消预约

@@ -1,4 +1,4 @@
-from Appointment.models import Student, Room, Appoint, College_Announcement
+from Appointment.models import Student, Room, Appoint, College_Announcement, CardCheckInfo
 from django.contrib import admin, messages
 from django.utils.html import format_html, format_html_join
 from datetime import datetime, timedelta, timezone, time, date
@@ -405,3 +405,7 @@ class AppointAdmin(admin.ModelAdmin):
     longterm1.short_description = "增加一周本预约"
     longterm4.short_description = "增加四周本预约"
     longterm8.short_description = "增加八周本预约"
+
+@admin.register(CardCheckInfo)
+class AppointAdmin(admin.ModelAdmin):
+    pass

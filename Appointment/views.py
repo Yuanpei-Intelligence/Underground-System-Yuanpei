@@ -428,7 +428,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         if Rid in all_rid:  # 如果在房间列表里，考虑类型
             room = Room.objects.get(Rid=Rid)
             if room.Rstatus == Room.Status.SUSPENDED:  # 自习室
-                cardcheckinfo_writer(student, room, False)
+                cardcheckinfo_writer(student, room, True, True)
                 return JsonResponse({
                     "code": 0,
                     "openDoor": "true"
@@ -463,7 +463,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     # 以下枚举所有无法开门情况
     if len(appointments) and len(stu_appoint) == 0:
         # 无法开门情况1：没有当前预约，或没有15分钟内开始的预约。
-        cardcheckinfo_writer(student, room, False)
+        cardcheckinfo_writer(student, room, False, False)
         return JsonResponse(
             {
                 "code": 1,
@@ -498,7 +498,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                                and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
                 # 更新stu_appoint
             else:
-                cardcheckinfo_writer(student, room, False)
+                cardcheckinfo_writer(student, room, False, False)
                 return JsonResponse(  # 无法预约（比如没信用分了）
                     {
                         "code": 1,
@@ -506,7 +506,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                     },
                     status=400)
         else:       # 预约时长不超过15分钟 或 预约时间不合法
-            cardcheckinfo_writer(student, room, False)
+            cardcheckinfo_writer(student, room, False, False)
             return JsonResponse({
                 "code": 1,
                 "openDoor": "false"
@@ -535,14 +535,14 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                             str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
                             "func[doorcheck]",
                             "Error")
-        cardcheckinfo_writer(student, room, False)
+        cardcheckinfo_writer(student, room, False, True)
         return JsonResponse(  # 未知错误
             {
                 "code": 1,
                 "openDoor": "false",
             },
             status=400)
-    cardcheckinfo_writer(student, room, True)
+    cardcheckinfo_writer(student, room, True, True)
     return JsonResponse({
         "code": 0,
         "openDoor": "true"

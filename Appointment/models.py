@@ -8,7 +8,6 @@ from django.dispatch import receiver
 # > python manage.py migrate
 # Django会给没有自增字段的表默认添加自增字段（id）
 
-
 class College_Announcement(models.Model):
     class Show_Status(models.IntegerChoices):
         Yes = 1
@@ -35,6 +34,7 @@ class Student(models.Model):
         verbose_name = '学生'
         verbose_name_plural = verbose_name
         ordering = ['Sid']
+
 
 class RoomManager(models.Manager):
     def permitted(self):
@@ -233,28 +233,37 @@ class Appoint(models.Model):
             data['Rtitle'] = '房间已删除'  # 房间名称
         return data
 
+
 class CardCheckInfo(models.Model):
     # 这里Room使用外键的话只能设置DO_NOTHING，否则删除房间就会丢失预约信息
     # 所以房间信息不能删除，只能逻辑删除
     # 调用时使用appoint_obj.Room和room_obj.appoint_list
     Cardroom = models.ForeignKey(Room,
-                             related_name='CardCheckInfo_list',
-                             null=True,
-                             on_delete=models.SET_NULL,
-                             verbose_name='房间号')
-    Cardstudent = models.ForeignKey(Student,on_delete=models.CASCADE,verbose_name='刷卡者',null=True)
+                                 related_name='CardCheckInfo_list',
+                                 null=True,
+                                 on_delete=models.SET_NULL,
+                                 verbose_name='房间号')
+    Cardstudent = models.ForeignKey(
+        Student, on_delete=models.CASCADE, verbose_name='刷卡者', null=True)
     Cardtime = models.DateTimeField('刷卡时间', auto_now_add=True)
 
     class Status(models.IntegerChoices):
-        DOOR_CLOSE = 0  # 门没开
-        DOOR_OPEN = 1  # 门开了
+        DOOR_CLOSE = 0  # 开门：否
+        DOOR_OPEN = 1  # 开门：是
 
-    CardStatus = models.SmallIntegerField('刷卡状态',
-                                       choices=Status.choices,
-                                       default=0)
+    CardStatus = models.SmallIntegerField(
+        '刷卡状态', choices=Status.choices, default=0)
+
+    ShouldOpenStatus = models.SmallIntegerField(
+        '是否应该开门', choices=Status.choices, default=0)
+    
+    class Meta:
+        verbose_name = "刷卡记录"
+        verbose_name_plural = verbose_name
 
 
 from Appointment.utils.scheduler_func import cancel_scheduler
+
 @receiver(pre_delete, sender=Appoint)
 def before_delete_Appoint(sender, instance, **kwargs):
     cancel_scheduler(instance.Aid)
