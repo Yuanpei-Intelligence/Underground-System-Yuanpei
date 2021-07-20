@@ -437,7 +437,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         else:  # 不在房间列表
             raise SystemError
     except Exception as e:
-        #cardcheckinfo_writer(student, room, False)
+        cardcheckinfo_writer(student, room, False, True)
         return JsonResponse(
             {
                 "code": 1,

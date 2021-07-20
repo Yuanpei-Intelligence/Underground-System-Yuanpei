@@ -4,10 +4,10 @@ from django.utils.html import format_html, format_html_join
 from datetime import datetime, timedelta, timezone, time, date
 from django.http import JsonResponse  # Json响应
 from django.db import transaction  # 原子化更改数据库
-from Appointment.utils.scheduler_func import addAppoint,scheduler
-from Appointment.utils.utils import operation_writer,send_wechat_message
+from Appointment.utils.scheduler_func import addAppoint, scheduler
+from Appointment.utils.utils import operation_writer, send_wechat_message
 from YPUnderground import global_info
-               
+
 
 import pypinyin
 
@@ -293,13 +293,13 @@ class AppointAdmin(admin.ModelAdmin):
                                         ],
                                   id=f'{appoint.Aid}_violate_admin_wechat',
                                   next_run_time=datetime.now() + timedelta(seconds=5))  # 5s足够了
-                operation_writer(global_info.system_log, str(appoint.Aid)+"号预约被管理员设为违约"+"发起人："+str(appoint.major_student), "func[admin:violate]", "OK")
+                operation_writer(global_info.system_log, str(
+                    appoint.Aid)+"号预约被管理员设为违约"+"发起人："+str(appoint.major_student), "func[admin:violate]", "OK")
         except:
             return self.message_user(request=request,
                                      message='操作失败!只允许对违约的条目操作!',
                                      level=messages.WARNING)
 
-        
         return self.message_user(request, "设为违约成功!")
 
     violate.short_description = '所选条目 违约'
@@ -350,7 +350,8 @@ class AppointAdmin(admin.ModelAdmin):
                         newappoint = Appoint(
                             Room=appoint.Room,
                             Astart=appoint.Astart + (i+1) * timedelta(days=7),
-                            Afinish=appoint.Afinish +  (i+1) * timedelta(days=7),
+                            Afinish=appoint.Afinish + \
+                                (i+1) * timedelta(days=7),
                             Ausage=appoint.Ausage,
                             Aannouncement=appoint.Aannouncement,
                             major_student=appoint.major_student,
@@ -406,6 +407,10 @@ class AppointAdmin(admin.ModelAdmin):
     longterm4.short_description = "增加四周本预约"
     longterm8.short_description = "增加八周本预约"
 
+
 @admin.register(CardCheckInfo)
 class CardCheckInfoAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'Cardroom', 'Cardstudent', 'Cardtime', 'CardStatus', 'ShouldOpenStatus', )  # 'is_delete'
+    search_fields = ('Cardroom__Rtitle',
+                     'Cardstudent__Sname', 'Cardroom__Rid', "Cardstudent__Sname", "id")
+    list_filter = ('CardStatus', 'ShouldOpenStatus')

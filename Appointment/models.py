@@ -244,7 +244,7 @@ class CardCheckInfo(models.Model):
                                  on_delete=models.SET_NULL,
                                  verbose_name='房间号')
     Cardstudent = models.ForeignKey(
-        Student, on_delete=models.CASCADE, verbose_name='刷卡者', null=True)
+        Student, on_delete=models.CASCADE, verbose_name='刷卡者', null=True, db_index=True)
     Cardtime = models.DateTimeField('刷卡时间', auto_now_add=True)
 
     class Status(models.IntegerChoices):
