@@ -407,5 +407,5 @@ class AppointAdmin(admin.ModelAdmin):
     longterm8.short_description = "增加八周本预约"
 
 @admin.register(CardCheckInfo)
-class AppointAdmin(admin.ModelAdmin):
+class CardCheckInfoAdmin(admin.ModelAdmin):
     pass
