@@ -25,7 +25,7 @@ import threading
 from YPUnderground import global_info, hash_identity_coder
 
 # utils对接工具
-from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete
+from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer
 import Appointment.utils.web_func as web_func
 
 # 定时任务注册
@@ -35,7 +35,7 @@ import Appointment.utils.scheduler_func as scheduler_func
 
 
 # 验证时间戳
-import time
+from time import mktime
 
 # 注册启动以上schedule任务
 register_events(scheduler)
@@ -79,7 +79,7 @@ def identity_check(request):    # 判断用户是否是本人
         try:
             # 认证通过
             d = datetime.utcnow()
-            t = time.mktime(datetime.timetuple(d))
+            t = mktime(datetime.timetuple(d))
             assert float(t) - float(request.session['timeStamp']) < 3600.0
             assert hash_identity_coder.verify(request.session['Sid'] + request.session['timeStamp'],
                                               request.session['Secret']) is True
@@ -412,19 +412,23 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
 
     # 获取房间基本信息，如果是自习室就开门
     try:
-
         Sid, Rid = get_post['Sid'], get_post['Rid']
 
         assert Sid is not None
         assert Rid is not None
 
+        student = Student.objects.get(Sid=Sid)
+        
         Rid = doortoroom(Rid)
         all_room = Room.objects.all()
         all_rid = [room.Rid for room in all_room]
         if Rid[:4] in all_rid:  # 表示增加了一个未知的A\B号
             Rid = Rid[:4]
+        room = None
         if Rid in all_rid:  # 如果在房间列表里，考虑类型
-            if Room.objects.get(Rid=Rid).Rstatus == Room.Status.SUSPENDED:  # 自习室
+            room = Room.objects.get(Rid=Rid)
+            if room.Rstatus == Room.Status.SUSPENDED:  # 自习室
+                cardcheckinfo_writer(student, room, True, True)
                 return JsonResponse({
                     "code": 0,
                     "openDoor": "true"
@@ -432,9 +436,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             # 否则是预约房，进入后续逻辑
         else:  # 不在房间列表
             raise SystemError
-
-        student = Student.objects.get(Sid=Sid)
     except Exception as e:
+        cardcheckinfo_writer(student, room, False, True)
         return JsonResponse(
             {
                 "code": 1,
@@ -458,9 +461,9 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                    and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
 
     # 以下枚举所有无法开门情况
-
     if len(appointments) and len(stu_appoint) == 0:
         # 无法开门情况1：没有当前预约，或没有15分钟内开始的预约。
+        cardcheckinfo_writer(student, room, False, False)
         return JsonResponse(
             {
                 "code": 1,
@@ -474,12 +477,9 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         contents['Rid'] = Rid
         contents['students'] = [Sid]
         contents['Sid'] = Sid
-        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day,
-                                      now_time.hour, now_time.minute, 0)  # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
-        timeid = web_func.get_time_id(Room.objects.get(Rid=Rid), time(
-            contents['Astart'].hour, contents['Astart'].minute))
-        endtime, valid = web_func.get_hour_time(
-            Room.objects.get(Rid=Rid), timeid+1)
+        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, now_time.minute, 0) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
+        timeid = web_func.get_time_id(room, time(contents['Astart'].hour, contents['Astart'].minute))
+        endtime, valid = web_func.get_hour_time(room, timeid+1)
 
         # 注意，由于制度上不允许跨天预约，这里的逻辑也不支持跨日预约（比如从晚上23:00约到明天1:00）。
         contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(
@@ -488,9 +488,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         contents['Ausage'] = "临时预约"
         contents['announcement'] = ""
         contents['Atemp_flag'] = True
-
-        # 为避免冲突，临时预约时长必须超过15分钟
-        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:
+        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:  # 为避免冲突，临时预约时长必须超过15分钟
             response = scheduler_func.addAppoint(contents)
             if response.status_code == 200:
                 stu_appoint = student.appoint_list.not_canceled()
@@ -500,6 +498,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                                and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
                 # 更新stu_appoint
             else:
+                cardcheckinfo_writer(student, room, False, False)
                 return JsonResponse(  # 无法预约（比如没信用分了）
                     {
                         "code": 1,
@@ -507,6 +506,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                     },
                     status=400)
         else:       # 预约时长不超过15分钟 或 预约时间不合法
+            cardcheckinfo_writer(student, room, False, False)
             return JsonResponse({
                 "code": 1,
                 "openDoor": "false"
@@ -531,16 +531,18 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                     now_appoint.save()
     except Exception as e:
         operation_writer(global_info.system_log,
-                         "可以开门却不开门的致命错误，房间号为" +
-                         str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
-                         "func[doorcheck]",
-                         "Error")
+                            "可以开门却不开门的致命错误，房间号为" +
+                            str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
+                            "func[doorcheck]",
+                            "Error")
+        cardcheckinfo_writer(student, room, False, True)
         return JsonResponse(  # 未知错误
             {
                 "code": 1,
                 "openDoor": "false",
             },
             status=400)
+    cardcheckinfo_writer(student, room, True, True)
     return JsonResponse({
         "code": 0,
         "openDoor": "true"
