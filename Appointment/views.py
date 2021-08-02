@@ -25,7 +25,7 @@ import threading
 from YPUnderground import global_info, hash_identity_coder
 
 # utils对接工具
-from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer
+from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer, check_temp_appoint
 import Appointment.utils.web_func as web_func
 
 # 定时任务注册
@@ -418,7 +418,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         assert Rid is not None
 
         student = Student.objects.get(Sid=Sid)
-        
+
         Rid = doortoroom(Rid)
         all_room = Room.objects.all()
         all_rid = [room.Rid for room in all_room]
@@ -462,7 +462,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
 
     # 以下枚举所有无法开门情况
     if len(appointments) and len(stu_appoint) == 0:
-        # 无法开门情况1：没有当前预约，或没有15分钟内开始的预约。
+        # 无法开门情况1：当前有预约，且自己没有15分钟内开始的预约。
         cardcheckinfo_writer(student, room, False, False)
         return JsonResponse(
             {
@@ -472,12 +472,21 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             status=400)
 
     if len(appointments) == 0 and len(stu_appoint) == 0:
-        # 无法开门情况2：或许可以发起临时预约。
+        # 情况2：或许可以发起临时预约。
+        # 首先检查该房间是否可以进行临时预约
+        if check_temp_appoint(room) == False:
+            cardcheckinfo_writer(student, room, False, False)
+            return JsonResponse({
+                "code": 1,
+                "openDoor": "false"
+            }, status=400)
+        # 该房间可以用于临时预约，检查时间是否合法
         contents = {}
         contents['Rid'] = Rid
         contents['students'] = [Sid]
         contents['Sid'] = Sid
-        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day, now_time.hour, now_time.minute, 0) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
+        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day,
+                                      now_time.hour, now_time.minute, 0)  # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
         timeid = web_func.get_time_id(room, time(contents['Astart'].hour, contents['Astart'].minute))
         endtime, valid = web_func.get_hour_time(room, timeid+1)
 
@@ -488,7 +497,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         contents['Ausage'] = "临时预约"
         contents['announcement'] = ""
         contents['Atemp_flag'] = True
-        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:  # 为避免冲突，临时预约时长必须超过15分钟
+        # 合法条件：为避免冲突，临时预约时长必须超过15分钟；预约时在房间可用时段
+        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:
             response = scheduler_func.addAppoint(contents)
             if response.status_code == 200:
                 stu_appoint = student.appoint_list.not_canceled()
@@ -531,10 +541,10 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                     now_appoint.save()
     except Exception as e:
         operation_writer(global_info.system_log,
-                            "可以开门却不开门的致命错误，房间号为" +
-                            str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
-                            "func[doorcheck]",
-                            "Error")
+                         "可以开门却不开门的致命错误，房间号为" +
+                         str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
+                         "func[doorcheck]",
+                         "Error")
         cardcheckinfo_writer(student, room, False, True)
         return JsonResponse(  # 未知错误
             {
