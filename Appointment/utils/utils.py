@@ -367,3 +367,6 @@ def operation_writer(user, message, source, status_code="OK"):
 def cardcheckinfo_writer(Student, Room, real_status, should_status):
     CardCheckInfo.objects.create(Cardroom=Room, Cardstudent=Student,
                                  CardStatus=real_status, ShouldOpenStatus=should_status)
+
+def check_temp_appoint(room):
+    return '研讨' in room.Rtitle
