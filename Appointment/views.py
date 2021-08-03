@@ -427,12 +427,37 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         room = None
         if Rid in all_rid:  # 如果在房间列表里，考虑类型
             room = Room.objects.get(Rid=Rid)
+            if room.Rstatus == Room.Status.FORBIDDEN:  # 禁止使用的房间
+                cardcheckinfo_writer(student, room, False, False)
+                return JsonResponse(
+                {
+                    "code": 1,
+                    "openDoor": "false",
+                },
+                status=400)
             if room.Rstatus == Room.Status.SUSPENDED:  # 自习室
-                cardcheckinfo_writer(student, room, True, True)
-                return JsonResponse({
-                    "code": 0,
-                    "openDoor": "true"
-                }, status=200)
+                if room.RIsAllNight == Room.IsAllNight.Yes:  # 通宵自习室
+                    cardcheckinfo_writer(student, room, True, True)
+                    return JsonResponse({
+                        "code": 0,
+                        "openDoor": "true"
+                    }, status=200)
+                else: #不是通宵自习室
+                    if datetime.now() >= datetime(datetime.now().year,datetime.now().month,datetime.now().day,room.Rstart.hour,room.Rstart.minute) and datetime.now() <= datetime(datetime.now().year,datetime.now().month,datetime.now().day,room.Rfinish.hour,room.Rfinish.minute):
+                        # 在开放时间内
+                        cardcheckinfo_writer(student, room, True, True)
+                        return JsonResponse({
+                        "code": 0,
+                        "openDoor": "true"
+                        },status=200)
+                    else: #不在开放时间内
+                        cardcheckinfo_writer(student, room, False, False)
+                        return JsonResponse(
+                        {
+                            "code": 1,
+                         "openDoor": "false",
+                        },
+                        status=400)
             # 否则是预约房，进入后续逻辑
         else:  # 不在房间列表
             raise SystemError
@@ -646,16 +671,16 @@ def index(request):  # 主页
     # 处理信息展示
     room_list = Room.objects.all()
     display_room_list = room_list.filter(Rstatus=1).order_by('-Rtitle')
-    talk_room_list = room_list.filter(
-        Rstatus=0, Rtitle__icontains="研讨").order_by('Rmin', 'Rid')
+    talk_room_list = room_list.filter( # 研讨室
+        Rtitle__icontains="研讨").exclude(Rstatus=1).order_by('Rmin', 'Rid')
     double_list = ['航模', '绘画', '书法']
-    function_room_list = room_list.filter(
-        Rstatus=0).exclude(Rid__icontains="R").exclude(Rtitle__icontains="研讨").union(
+    function_room_list = room_list.exclude( # 功能房
+        Rid__icontains="R").exclude(Rstatus=1).exclude(Rtitle__icontains="研讨").union(
         room_list.filter(Q(Rtitle__icontains="绘画") | Q(
             Rtitle__icontains="航模") | Q(Rtitle__icontains="书法"))
     ).order_by('Rid')
 
-    russian_room_list = room_list.filter(Rstatus=0).filter(
+    russian_room_list = room_list.exclude(Rstatus=1).filter( # 俄文楼
         Rid__icontains="R").order_by('Rid')
     russ_len = len(russian_room_list)
     if request.method == "POST":
@@ -792,9 +817,9 @@ def arrange_talk_room(request):
             is_today = True
             show_min = global_info.today_min
         room_list = Room.objects.filter(
-            Rtitle__contains='研讨', Rstatus=0).order_by('Rmin', 'Rid')
+            Rtitle__contains='研讨').exclude(Rstatus=1).order_by('Rmin', 'Rid')
     else:  # type == "russ"
-        room_list = Room.objects.filter(Rstatus=0).filter(
+        room_list = Room.objects.exclude(Rstatus=1).filter(
             Rid__icontains="R").order_by('Rid')
     # YHT: added for russian search
     Rids = [room.Rid for room in room_list]
