@@ -56,13 +56,22 @@ class Room(models.Model):
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约
-        SUSPENDED = 1  # 暂停使用
-        # FORBIDDEN = 2  # 禁止使用
+        SUSPENDED = 1  # 暂定使用
+        FORBIDDEN = 2  # 禁止使用
 
     Rstatus = models.SmallIntegerField('房间状态',
                                        choices=Status.choices,
                                        default=0)
 
+    # RIsAllNight 标记当前房间是否可以通宵使用，可由管理员修改（主要针对自习室）
+    class IsAllNight(models.IntegerChoices):
+        Yes = 1
+        No = 0
+    
+    RIsAllNight = models.SmallIntegerField('是否通宵使用',
+                                       choices=IsAllNight.choices,
+                                       default=0)
+    
     objects = RoomManager()
 
     class Meta:

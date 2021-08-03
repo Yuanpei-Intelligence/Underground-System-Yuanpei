@@ -110,7 +110,7 @@ class RoomAdmin(admin.ModelAdmin):
     def Rstatus_display(self, obj):
         if obj.Rstatus == Room.Status.PERMITTED:
             color_code = 'green'
-        elif obj.Rstatus == Room.Status.SUSPENDED:
+        else:
             color_code = 'red'
         return format_html(
             '<span style="color: {};">{}</span>',

@@ -427,12 +427,37 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
         room = None
         if Rid in all_rid:  # 如果在房间列表里，考虑类型
             room = Room.objects.get(Rid=Rid)
+            if room.Rstatus == Room.Status.FORBIDDEN:  # 禁止使用的房间
+                cardcheckinfo_writer(student, room, False, False)
+                return JsonResponse(
+                {
+                    "code": 1,
+                    "openDoor": "false",
+                },
+                status=400)
             if room.Rstatus == Room.Status.SUSPENDED:  # 自习室
-                cardcheckinfo_writer(student, room, True, True)
-                return JsonResponse({
-                    "code": 0,
-                    "openDoor": "true"
-                }, status=200)
+                if room.RIsAllNight == Room.IsAllNight.Yes:  # 通宵自习室
+                    cardcheckinfo_writer(student, room, True, True)
+                    return JsonResponse({
+                        "code": 0,
+                        "openDoor": "true"
+                    }, status=200)
+                else: #不是通宵自习室
+                    if datetime.now() >= datetime(datetime.now().year,datetime.now().month,datetime.now().day,room.Rstart.hour,room.Rstart.minute) and datetime.now() <= datetime(datetime.now().year,datetime.now().month,datetime.now().day,room.Rfinish.hour,room.Rfinish.minute):
+                        # 在开放时间内
+                        cardcheckinfo_writer(student, room, True, True)
+                        return JsonResponse({
+                        "code": 0,
+                        "openDoor": "true"
+                        },status=200)
+                    else: #不在开放时间内
+                        cardcheckinfo_writer(student, room, False, False)
+                        return JsonResponse(
+                        {
+                            "code": 1,
+                         "openDoor": "false",
+                        },
+                        status=400)
             # 否则是预约房，进入后续逻辑
         else:  # 不在房间列表
             raise SystemError
@@ -646,16 +671,16 @@ def index(request):  # 主页
     # 处理信息展示
     room_list = Room.objects.all()
     display_room_list = room_list.filter(Rstatus=1).order_by('-Rtitle')
-    talk_room_list = room_list.filter(
-        Rstatus=0, Rtitle__icontains="研讨").order_by('Rmin', 'Rid')
+    talk_room_list = room_list.filter( # 研讨室
+        Rtitle__icontains="研讨").exclude(Rstatus=1).order_by('Rmin', 'Rid')
     double_list = ['航模', '绘画', '书法']
-    function_room_list = room_list.filter(
-        Rstatus=0).exclude(Rid__icontains="R").exclude(Rtitle__icontains="研讨").union(
+    function_room_list = room_list.exclude( # 功能房
+        Rid__icontains="R").exclude(Rstatus=1).exclude(Rtitle__icontains="研讨").union(
         room_list.filter(Q(Rtitle__icontains="绘画") | Q(
             Rtitle__icontains="航模") | Q(Rtitle__icontains="书法"))
     ).order_by('Rid')
 
-    russian_room_list = room_list.filter(Rstatus=0).filter(
+    russian_room_list = room_list.exclude(Rstatus=1).filter( # 俄文楼
         Rid__icontains="R").order_by('Rid')
     russ_len = len(russian_room_list)
     if request.method == "POST":
@@ -713,54 +738,59 @@ def arrange_time(request):
             redirect(reverse('Appointment:index'))
 
     dayrange_list = web_func.get_dayrange()
-    # 观察总共有多少个时间段
-    time_range = web_func.get_time_id(
-        room_object, room_object.Rfinish, mode="leftopen")
-    for day in dayrange_list:  # 对每一天 读取相关的展示信息
-        day['timesection'] = []
-        temp_hour, temp_minute = room_object.Rstart.hour, int(
-            room_object.Rstart.minute >= 30)
 
-        for i in range(time_range + 1):  # 对每半个小时
-            day['timesection'].append({})
-            day['timesection'][-1]['starttime'] = str(
-                temp_hour + (i + temp_minute) // 2).zfill(2) + ":" + str(
-                    (i + temp_minute) % 2 * 30).zfill(2)
-            day['timesection'][-1]['status'] = 0  # 0可用 1已经预约 2已过
-            day['timesection'][-1]['id'] = i
-    # 筛选可能冲突的预约
-    appoints = Appoint.objects.not_canceled().filter(
-        Room_id=Rid,
-        Afinish__gte=datetime(year=dayrange_list[0]['year'],
-                              month=dayrange_list[0]['month'],
-                              day=dayrange_list[0]['day'],
-                              hour=0,
-                              minute=0,
-                              second=0),
-        Astart__lte=datetime(year=dayrange_list[-1]['year'],
-                             month=dayrange_list[-1]['month'],
-                             day=dayrange_list[-1]['day'],
-                             hour=23,
-                             minute=59,
-                             second=59))
+    if room_object.Rstatus == Room.Status.FORBIDDEN:
+        return render(request, 'Appointment/booking.html', locals())
 
-    for appoint_record in appoints:
-        change_id_list = web_func.timerange2idlist(Rid, appoint_record.Astart,
+    else:
+        # 观察总共有多少个时间段
+        time_range = web_func.get_time_id(
+            room_object, room_object.Rfinish, mode="leftopen")
+        for day in dayrange_list:  # 对每一天 读取相关的展示信息
+            day['timesection'] = []
+            temp_hour, temp_minute = room_object.Rstart.hour, int(
+                room_object.Rstart.minute >= 30)
+
+            for i in range(time_range + 1):  # 对每半个小时
+                day['timesection'].append({})
+                day['timesection'][-1]['starttime'] = str(
+                   temp_hour + (i + temp_minute) // 2).zfill(2) + ":" + str(
+                       (i + temp_minute) % 2 * 30).zfill(2)
+                day['timesection'][-1]['status'] = 0  # 0可用 1已经预约 2已过
+                day['timesection'][-1]['id'] = i
+        # 筛选可能冲突的预约
+        appoints = Appoint.objects.not_canceled().filter(
+            Room_id=Rid,
+            Afinish__gte=datetime(year=dayrange_list[0]['year'],
+                                month=dayrange_list[0]['month'],
+                                day=dayrange_list[0]['day'],
+                                hour=0,
+                                minute=0,
+                                second=0),
+            Astart__lte=datetime(year=dayrange_list[-1]['year'],
+                                month=dayrange_list[-1]['month'],
+                                day=dayrange_list[-1]['day'],
+                                hour=23,
+                                minute=59,
+                                second=59))
+
+        for appoint_record in appoints:
+            change_id_list = web_func.timerange2idlist(Rid, appoint_record.Astart,
                                                    appoint_record.Afinish, time_range)
-        for day in dayrange_list:
-            if appoint_record.Astart.date() == date(day['year'], day['month'],
+            for day in dayrange_list:
+                if appoint_record.Astart.date() == date(day['year'], day['month'],
                                                     day['day']):
-                for i in change_id_list:
-                    day['timesection'][i]['status'] = 1
+                    for i in change_id_list:
+                        day['timesection'][i]['status'] = 1
 
-    # 删去今天已经过去的时间
-    present_time_id = web_func.get_time_id(room_object, datetime.now().time())
-    for i in range(min(time_range, present_time_id) + 1):
-        dayrange_list[0]['timesection'][i]['status'] = 1
+        # 删去今天已经过去的时间
+        present_time_id = web_func.get_time_id(room_object, datetime.now().time())
+        for i in range(min(time_range, present_time_id) + 1):
+            dayrange_list[0]['timesection'][i]['status'] = 1
 
-    js_dayrange_list = json.dumps(dayrange_list)
+        js_dayrange_list = json.dumps(dayrange_list)
 
-    return render(request, 'Appointment/booking.html', locals())
+        return render(request, 'Appointment/booking.html', locals())
 
 # tag searcharrange_talk
 
@@ -792,9 +822,9 @@ def arrange_talk_room(request):
             is_today = True
             show_min = global_info.today_min
         room_list = Room.objects.filter(
-            Rtitle__contains='研讨', Rstatus=0).order_by('Rmin', 'Rid')
+            Rtitle__contains='研讨').exclude(Rstatus=1).order_by('Rmin', 'Rid')
     else:  # type == "russ"
-        room_list = Room.objects.filter(Rstatus=0).filter(
+        room_list = Room.objects.exclude(Rstatus=1).filter(
             Rid__icontains="R").order_by('Rid')
     # YHT: added for russian search
     Rids = [room.Rid for room in room_list]
