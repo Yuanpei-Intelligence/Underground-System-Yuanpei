@@ -675,10 +675,10 @@ def index(request):  # 主页
         Rtitle__icontains="研讨").filter(Rstatus=Room.Status.PERMITTED).order_by('Rmin', 'Rid')
     double_list = ['航模', '绘画', '书法']
     function_room_list = room_list.exclude( # 功能房
-        Rid__icontains="R").filter(Rstatus=Room.Status.PERMITTED).exclude(Rtitle__icontains="研讨").union(
-        room_list.filter(Q(Rtitle__icontains="绘画") | Q(
-            Rtitle__icontains="航模") | Q(Rtitle__icontains="书法"))
-    ).order_by('Rid')
+        Rid__icontains="R").filter(Rstatus=Room.Status.PERMITTED).filter(~Q(Rtitle__icontains="研讨") | Q(Rtitle__icontains="绘画") | Q(Rtitle__icontains="航模") | Q(Rtitle__icontains="书法")).order_by('Rid')
+    occupied_rooms = Appoint.objects.not_canceled().filter(
+        Astart__lte=datetime.now(), Afinish__gte=datetime.now()).values('Room')
+    available_room_list = function_room_list.exclude(Rid__in=occupied_rooms) # 空闲房间
 
     russian_room_list = room_list.filter(Rstatus=Room.Status.PERMITTED).filter( # 俄文楼
         Rid__icontains="R").order_by('Rid')
