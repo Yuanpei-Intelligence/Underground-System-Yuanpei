@@ -1,13 +1,16 @@
 # store some funcitons
 
+from YPUnderground import hash_wechat_coder
 import requests as requests
 import json
-
+from YPUnderground import global_info
 import threading
-from Appointment.models import Student, Room, Appoint  # 数据库模型
+from Appointment.models import Student, Room, Appoint, CardCheckInfo  # 数据库模型
 from django.db import transaction  # 原子化更改数据库
 from datetime import datetime, timedelta
-import os, time
+from django.http import JsonResponse
+import os
+import time
 
 '''
 YWolfeee:
@@ -105,14 +108,15 @@ def doortoroom(door):
 ############ modified by wxy ############
 
 
-
 # 给企业微信发送消息
 # update 0309:原来是返回状态码和错误信息，现在在这个函数中直接做错误处理，如果处理不了就写日志，不返回什么了
-from Appointment import hash_wechat_coder, global_info
+
 
 send_message = requests.session()
 
-def send_wechat_message(stu_list, starttime, room, message_type, major_student, usage, announcement, num, reason=''):#, credit=''):
+
+# , credit=''):
+def send_wechat_message(stu_list, starttime, room, message_type, major_student, usage, announcement, num, reason=''):
     if message_type == 'new':
         message = '您有一条新的预约\n'  # 发起者 用途 人数
         message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
@@ -127,36 +131,47 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
             message += '\n预约通知：'+announcement
     elif message_type == 'new&start':
         message = '您有一条新的预约\n并即将在15分钟内开始'  # 发起者 用途 人数
-        message += '\n时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
         message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
         if announcement:
             message += '\n预约通知：'+announcement
     elif message_type == 'violated':
         message = '您有一条新增的违约记录'  # 原因
-        message += '\n时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n原因：'+reason#+'\n当前信用分：'+str(credit)
+        message += '\n时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n原因：'+reason  # +'\n当前信用分：'+str(credit)
     elif message_type == 'cancel':
         message = '您有一条预约被取消'  # 发起者 用途 人数
-        message += '\n时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
         message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
     elif message_type == 'longterm':    # 发起一条长线预约
         message = '【管理员操作】您有一条预约新增了未来'+str(reason)+'周的同时段预约\n'  # 类型
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
+        message += '时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
         message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
         if announcement:
             message += '\n预约通知：'+announcement
     elif message_type == 'confirm_admin_w2c':    # WAITING to CONFIRMED
         message = '【管理员操作】您有一条预约已确认完成\n'  # 类型
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
+        message += '时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
         message += '\n用途：'+usage+'\n人数：'+str(num)
     elif message_type == 'confirm_admin_v2j':    # VIOLATED to JUDGED
         message = '【管理员操作】您有一条违约的预约申诉成功\n'  # 类型
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
+        message += '时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
         message += '\n用途：'+usage+'\n人数：'+str(num)
     elif message_type == 'violate_admin':    # VIOLATED
         message = '【管理员操作】您有一条预约被判定违约\n'  # 类型
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
+        message += '时间：' + \
+            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
         message += '\n用途：'+usage+'\n人数：'+str(num)+'\n如有疑问请联系管理员'
+    elif message_type == 'temp_appointment':  # 临时预约
+        message = '您发起了一条临时预约\n'
+        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
     else:
         # todo: 记得测试一下!为什么之前出问题的log就找不到呢TAT
         operation_writer(global_info.system_log,
@@ -171,19 +186,22 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
         'toall': True,
         'content': message,
         'secret': secret,
-        'card':True
+        'card': True
     }
-    response = send_message.post(global_info.wechat_url, data=json.dumps(post_data))
+    response = send_message.post(
+        global_info.wechat_url, data=json.dumps(post_data))
     for _ in range(0, 3):  # 重发3次
         response = response.json()
         if response['status'] == 200:
             operation_writer(global_info.system_log,
-                             starttime.strftime("%Y-%m-%d %H:%M:%S") + str(room) 
-                             + message_type + "向微信发消息成功", "func[send_wechat_message]",
+                             starttime.strftime(
+                                 "%Y-%m-%d %H:%M:%S") + str(room)
+                             + message_type +
+                             "向微信发消息成功", "func[send_wechat_message]",
                              "OK")
             return
         # else check the reason, send wechat message again
-        
+
         if response['data']['errMsg'] == '部分或全部发送失败':
             stu_list = [i[0] for i in response['data']['detail']]
             post_data = {
@@ -191,7 +209,7 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
                 'toall': True,
                 'content': message,
                 'secret': secret,
-                'card':True
+                'card': True
             }
             response = send_message.post(
                 '', data=json.dumps(post_data))
@@ -211,7 +229,8 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
     # 重发3次都失败了
     operation_writer(global_info.system_log,
                      starttime.strftime("%Y-%m-%d %H:%M:%S") + str(room) + message_type +
-                     "向微信发消息失败，原因：多次发送失败. 发起者为: " + str(major_student), "func[send_wechat_message]",
+                     "向微信发消息失败，原因：多次发送失败. 发起者为: " +
+                     str(major_student), "func[send_wechat_message]",
                      "Problem")
     return
     # return  1, response['data']['errMsg']
@@ -227,11 +246,12 @@ def appoint_violate(input_appoint, reason):  # 将一个aid设为违约 并根�
     try:
         #lock.acquire()
         operation_succeed = False
-        appoints = Appoint.objects.select_related('major_student').select_for_update().filter(Aid=input_appoint.Aid)
+        appoints = Appoint.objects.select_related(
+            'major_student').select_for_update().filter(Aid=input_appoint.Aid)
         with transaction.atomic():
             if len(appoints) != 1:
                 raise AssertionError
-            for appoint in appoints:    #按照假设，这里的访问应该是原子的，所以第二个程序到这里会卡主
+            for appoint in appoints:  # 按照假设，这里的访问应该是原子的，所以第二个程序到这里会卡主
                 really_deduct = False
 
                 if real_credit_point and appoint.Astatus != Appoint.Status.VIOLATED:  # 不出现负分；如果已经是violated了就不重复扣分了
@@ -256,22 +276,22 @@ def appoint_violate(input_appoint, reason):  # 将一个aid设为违约 并根�
                     areason = str(appoint.get_Areason_display())
                     credit = str(appoint.major_student.Scredit)
 
-        if operation_succeed: # 本任务执行成功
+        if operation_succeed:  # 本任务执行成功
             send_wechat_message([major_sid],
-                        astart,
-                        aroom, 
-                        "violated",
-                        major_name,
-                        usage,
-                        announce,
-                        number,
-                        status,
-                        #appoint.major_student.Scredit,
-                        )  # totest: only main_student
+                                astart,
+                                aroom,
+                                "violated",
+                                major_name,
+                                usage,
+                                announce,
+                                number,
+                                status,
+                                #appoint.major_student.Scredit,
+                                )  # totest: only main_student
             str_pid = str(os.getpid())
             operation_writer(major_sid, "预约" + str(aid) + "出现违约:" +
-                        str(areason) + ";是否扣除信用分:"+str(really_deduct)+
-                        ";剩余信用分"+str(credit), "func[appoint_violate]"+str_pid, "OK") #str(os.getpid()),str(threading.current_thread().name()))
+                             str(areason) + ";是否扣除信用分:"+str(really_deduct) +
+                             ";剩余信用分"+str(credit), "func[appoint_violate]"+str_pid, "OK")  # str(os.getpid()),str(threading.current_thread().name()))
             #lock.release()
         return True, ""
     except Exception as e:
@@ -319,13 +339,13 @@ def operation_writer(user, message, source, status_code="OK"):
         source = str(source).ljust(30)
         message = written_time + format_user + \
             source + status_code.ljust(10) + message+"\n"
-        
+
         file = open(os.path.join(log_user_path, str(user)+".log"), mode='a')
         file.write(message)
         file.close()
         if status_code == "Error":
             send_wechat_message(
-                stu_list=['','',''],
+                stu_list=['', '', ''],
                 starttime=datetime.now(),
                 room=Room.objects.get(Rid="B107A"),
                 message_type="violated",
@@ -340,5 +360,13 @@ def operation_writer(user, message, source, status_code="OK"):
         # 最好是发送邮件通知存在问题
         # 待补充
         print(e)
-        
+
     lock.release()
+
+
+def cardcheckinfo_writer(Student, Room, real_status, should_status):
+    CardCheckInfo.objects.create(Cardroom=Room, Cardstudent=Student,
+                                 CardStatus=real_status, ShouldOpenStatus=should_status)
+
+def check_temp_appoint(room):
+    return '研讨' in room.Rtitle
