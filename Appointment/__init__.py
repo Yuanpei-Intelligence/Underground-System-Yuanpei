@@ -6,18 +6,18 @@ class LongTermInfo():
     def __init__(self):
         # 读取json文件, 包括url地址、输入输出位置等
         try:
-            load_file = open(os.path.join(BASE_DIR,"Appointment","load_setting.json"),'r')
+            load_file = open(os.path.join("Appointment","load_setting.json"),'r')
         except:
             raise IOError("Can not found load_setting.json.")
-
+        
         try:
             load_json = json.load(load_file)
             load_file.close()
-            self.login_url = load_json["url"]['login_url']     # 由陈子维学长提供的统一登录入口
-            self.img_url = load_json["url"]['img_url']         # 跳过DNS解析的秘密访问入口,帮助加速头像
-            self.this_url = load_json["url"]['this_url']       # 跳过DNS解析的秘密访问入口,帮助加速头像
-            self.wechat_url = load_json["url"]['wechat_url']   # 访问企业微信封装层的接口
-            self.system_log = load_json["url"]['system_log']
+            self.login_url = load_json['login_url']     # 由陈子维学长提供的统一登录入口
+            self.img_url = load_json['img_url']         # 跳过DNS解析的秘密访问入口,帮助加速头像
+            self.this_url = load_json['this_url']       # 跳过DNS解析的秘密访问入口,帮助加速头像
+            self.wechat_url = load_json['wechat_url']   # 访问企业微信封装层的接口
+            self.system_log = load_json['system_log']
         except:
             raise IndexError("Can not find necessary field, please check your json file.")
 

@@ -12,19 +12,19 @@ class College_Announcement(models.Model):
     class Show_Status(models.IntegerChoices):
         Yes = 1
         No = 0
-
+    
     show = models.SmallIntegerField('是否显示',
-                                    choices=Show_Status.choices,
-                                    default=0)
-    announcement = models.CharField('通知内容', max_length=256, null=True)
+                                       choices=Show_Status.choices,
+                                       default=0)
+    announcement = models.CharField('通知内容',max_length=256,null=True)
 
     class Meta:
         verbose_name = "全院公告"
         verbose_name_plural = verbose_name
 
-
 class Student(models.Model):
     Sid = models.CharField('学号', max_length=10, primary_key=True)
+    Secret = models.CharField('密码', max_length=50)
     Sname = models.CharField('姓名', max_length=64)
     Scredit = models.IntegerField('信用分', default=3)
     superuser = models.IntegerField('超级用户', default=0)
@@ -50,28 +50,19 @@ class Room(models.Model):
     Rmax = models.IntegerField('房间使用人数上限', default=20)
     Rstart = models.TimeField('最早预约时间')
     Rfinish = models.TimeField('最迟预约时间')
-    Rlatest_time = models.DateTimeField("摄像头心跳", auto_now_add=True)
-    Rpresent = models.IntegerField('目前人数', default=0)
+    Rlatest_time = models.DateTimeField("摄像头心跳",auto_now_add=True)
+    Rpresent = models.IntegerField('目前人数',default=0)
 
     # Rstatus 标记当前房间是否允许预约，可由管理员修改
     class Status(models.IntegerChoices):
         PERMITTED = 0  # 允许预约
         SUSPENDED = 1  # 暂定使用
-        FORBIDDEN = 2  # 禁止使用
+        # FORBIDDEN = 2  # 禁止使用
 
     Rstatus = models.SmallIntegerField('房间状态',
                                        choices=Status.choices,
                                        default=0)
 
-    # RIsAllNight 标记当前房间是否可以通宵使用，可由管理员修改（主要针对自习室）
-    class IsAllNight(models.IntegerChoices):
-        Yes = 1
-        No = 0
-    
-    RIsAllNight = models.SmallIntegerField('是否通宵使用',
-                                       choices=IsAllNight.choices,
-                                       default=0)
-    
     objects = RoomManager()
 
     class Meta:
@@ -94,18 +85,10 @@ class Appoint(models.Model):
     Atime = models.DateTimeField('申请时间', auto_now_add=True)
     Astart = models.DateTimeField('开始时间')
     Afinish = models.DateTimeField('结束时间')
-    Ausage = models.CharField('用途', max_length=256, null=True)
-    Aannouncement = models.CharField(
-        '预约通知', max_length=256, null=True, blank=True)
-    Anon_yp_num = models.IntegerField("外院人数", default=0)
-    Ayp_num = models.IntegerField('院内人数', default=0)
-
-    # Check_status: 分钟内检测状态
-    class Check_status(models.IntegerChoices):
-        FAILED = 0  # 预约在此分钟的检查尚未通过
-        PASSED = 1  # 预约在特定分钟内的检查是通过的
-    Acheck_status = models.SmallIntegerField(
-        '检测状态', choices=Check_status.choices, default=0)
+    Ausage = models.CharField('用途', max_length=256,null=True)
+    Aannouncement = models.CharField('预约通知',max_length=256,null=True,blank=True)
+    Anon_yp_num = models.IntegerField("外院人数",default=0)
+    Ayp_num = models.IntegerField('院内人数',default=0)
 
     # 这里Room使用外键的话只能设置DO_NOTHING，否则删除房间就会丢失预约信息
     # 所以房间信息不能删除，只能逻辑删除
@@ -115,10 +98,8 @@ class Appoint(models.Model):
                              null=True,
                              on_delete=models.SET_NULL,
                              verbose_name='房间号')
-    students = models.ManyToManyField(
-        Student, related_name='appoint_list', db_index=True)
-    major_student = models.ForeignKey(
-        Student, on_delete=models.CASCADE, verbose_name='Appointer', null=True)
+    students = models.ManyToManyField(Student, related_name='appoint_list',db_index=True)
+    major_student = models.ForeignKey(Student,on_delete=models.CASCADE,verbose_name='Appointer',null=True)
 
     class Status(models.IntegerChoices):
         CANCELED = 0  # 已取消
@@ -134,30 +115,19 @@ class Appoint(models.Model):
                                   default=1)
 
     # modified by wxy
-    Acamera_check_num = models.IntegerField('检查次数', default=0)
-    Acamera_ok_num = models.IntegerField('人数合格次数', default=0)
+    Acamera_check_num = models.IntegerField('检查次数',default=0)
+    Acamera_ok_num = models.IntegerField('人数合格次数',default=0)
 
     class Reason(models.IntegerChoices):
-        R_NOVIOLATED = 0  # 没有违约
-        R_LATE = 1  # 迟到
-        R_TOOLITTLE = 2  # 人数不足
-        R_ELSE = 3  # 其它原因
+        R_NOVIOLATED = 0 # 没有违约
+        R_LATE = 1 # 迟到
+        R_TOOLITTLE = 2 # 人数不足
+        R_ELSE = 3 # 其它原因
 
     Areason = models.IntegerField('违约原因',
                                   choices=Reason.choices,
                                   default=0)
-
     # end
-
-    # --- add by lhw --- #
-    class Bool_flag(models.IntegerChoices):
-        Yes = 1
-        No = 0
-
-    Atemp_flag = models.SmallIntegerField('是否为临时预约',
-                                          choices=Bool_flag.choices,
-                                          default=0)
-    # --- end(2021.7.13) --- ##
 
     objects = AppointManager()
 
@@ -196,6 +166,7 @@ class Appoint(models.Model):
             status = "申诉成功"
         return status
 
+
     def toJson(self):
         data = {
             'Aid':
@@ -209,7 +180,7 @@ class Appoint(models.Model):
             'Ausage':
             self.Ausage,  # 房间用途
             'Aannouncement':
-            self.Aannouncement,  # 预约通知
+            self.Aannouncement, # 预约通知
             'Astatus':
             self.get_Astatus_display(),  # 预约状态
             'Areason':
@@ -219,12 +190,12 @@ class Appoint(models.Model):
             'Rtitle':
             self.Room.Rtitle,  # 房间名称
             'yp_num':
-            self.Ayp_num,  # 院内人数
+            self.Ayp_num,   #院内人数
             'non_yp_num':
-            self.Anon_yp_num,  # 外院人数
+            self.Anon_yp_num,   #外院人数
             'major_student':
             {
-                "Sname": self.major_student.Sname,  # 发起预约人
+                "Sname": self.major_student.Sname, # 发起预约人
                 "Sid": self.major_student.Sid,
             },
             'students': [  # 参与人
@@ -242,37 +213,33 @@ class Appoint(models.Model):
             data['Rtitle'] = '房间已删除'  # 房间名称
         return data
 
-
-class CardCheckInfo(models.Model):
-    # 这里Room使用外键的话只能设置DO_NOTHING，否则删除房间就会丢失预约信息
-    # 所以房间信息不能删除，只能逻辑删除
-    # 调用时使用appoint_obj.Room和room_obj.appoint_list
-    Cardroom = models.ForeignKey(Room,
-                                 related_name='CardCheckInfo_list',
-                                 null=True,
-                                 on_delete=models.SET_NULL,
-                                 verbose_name='房间号')
-    Cardstudent = models.ForeignKey(
-        Student, on_delete=models.CASCADE, verbose_name='刷卡者', null=True, db_index=True)
-    Cardtime = models.DateTimeField('刷卡时间', auto_now_add=True)
-
-    class Status(models.IntegerChoices):
-        DOOR_CLOSE = 0  # 开门：否
-        DOOR_OPEN = 1  # 开门：是
-
-    CardStatus = models.SmallIntegerField(
-        '刷卡状态', choices=Status.choices, default=0)
-
-    ShouldOpenStatus = models.SmallIntegerField(
-        '是否应该开门', choices=Status.choices, default=0)
-    
-    class Meta:
-        verbose_name = "刷卡记录"
-        verbose_name_plural = verbose_name
-
-
 from Appointment.utils.scheduler_func import cancel_scheduler
-
-@receiver(pre_delete, sender=Appoint)
-def before_delete_Appoint(sender, instance, **kwargs):
+@receiver(pre_delete,sender=Appoint)
+def before_delete_Appoint(sender,instance,**kwargs):
     cancel_scheduler(instance.Aid)
+
+
+class SidAndWid(models.Model):
+    Sid_id = models.ForeignKey(Student, verbose_name='学生id外键', on_delete=models.CASCADE)
+    Wxid = models.CharField('wxid', max_length=50)
+    status = models.IntegerField('审核', default=0)  # 0 待审核 1已通过
+    Rid_id = models.ForeignKey(Room, verbose_name='房间号id外键', on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = '学生微信通知表'
+        verbose_name_plural = verbose_name
+        ordering = ['Sid_id']
+
+
+class Teacher(models.Model):
+    Tid = models.CharField('老师号', max_length=10, primary_key=True)
+    Secret = models.CharField('密码', max_length=50)
+    Sname = models.CharField('姓名', max_length=64)
+    Scredit = models.IntegerField('信用分', default=3)
+    superuser = models.IntegerField('超级用户', default=0)
+    pinyin = models.CharField('拼音', max_length=20, null=True)
+
+    class Meta:
+        verbose_name = '教师表'
+        verbose_name_plural = verbose_name
+        ordering = ['Tid']

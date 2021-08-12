@@ -17,7 +17,7 @@ def messages(msg,wid):
     values = {
         "touser": wid,
         "msgtype": 'text',
-        "agentid": '你的id', #偷懒没有使用变量了，注意修改为对应应用的agentid
+        "agentid": 1000009, #偷懒没有使用变量了，注意修改为对应应用的agentid
         "text": {'content': msg},  #msg的数据类型str
         "safe": 0
         }
@@ -39,8 +39,8 @@ def send_message(url,token, data):
 
 ##############函数结束########################
 
-corpid = '你的appkey'
-corpsecret = '你的secretkey'
+corpid = 'ww3cae274391cded53'
+corpsecret = 'IWJIWq7sSrLrqqPrpkUbnmbyuuS2aMWIe-qR7lILO4U'
 url = 'https://qyapi.weixin.qq.com'
 # msg='test,Python调用企业微信测试'
 

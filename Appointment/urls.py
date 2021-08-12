@@ -47,5 +47,8 @@ urlpatterns = [
     path('door_check', views.door_check, name='door_check'),
     path('arrange_talk',views.arrange_talk_room,name='arrange_talk'),
     path('display_getappoint',views.display_getappoint,name='display_getappoint'),
+
+    path('teacher_login',views.teacher_login,name='teacher_login'),
+    path('teacher_check_list',views.teacher_check_list,name='teacher_check_list'),
     #path('img_get_func',views.img_get_func,name='img_get_func'),    # 获取头像位置的函数
 ]

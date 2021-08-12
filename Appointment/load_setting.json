@@ -1,0 +1,8 @@
+{
+        "login_url":    "http://127.0.0.1:8000",
+        "img_url":      "http://127.0.0.1:8000",
+        "this_url":     "http://localhost:3333",
+        "wechat_url":   "http://162.105.210.3:12882",
+        "system_log":   "Appoint_Sys"
+
+}

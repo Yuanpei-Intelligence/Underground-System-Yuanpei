@@ -1,5 +1,5 @@
 import requests as requests
-from YPUnderground import global_info
+from Appointment import global_info
 from Appointment.models import Student, Room, Appoint, College_Announcement
 from django.db.models import Q  # modified by wxy
 from datetime import datetime, timedelta, timezone, time, date
@@ -60,8 +60,6 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
         original_qualified_rate -= 0.15             # 建议在0.1-0.2之间 前者最严 后者最宽松
     if appoint.Afinish - appoint.Astart < min31:    # 减少时间过短时前后未准时到的影响
         original_qualified_rate -= 0.05             # 建议在0-0.1间 暂未打算投入使用
-    if appoint.Atemp_flag == 1:                 # 对于临时预约，不检查摄像头 by lhw（2021.7.13）
-        original_qualified_rate = 0             
     # if appoint.Areason == Appoint.Reason.R_LATE:    # 给未刷卡提供直接通过的机会
     #     original_qualified_rate += 0.25             # 建议在0.2-0.4之间 极端可考虑0.5 暂不使用
     return original_qualified_rate
