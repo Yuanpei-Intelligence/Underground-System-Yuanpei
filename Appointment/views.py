@@ -615,7 +615,6 @@ def index(request):  # 主页
                     request.session['Sid'] = stu_id_ming
                     request.session['Secret'] = stu_id_code
                     request.session['timeStamp'] = timeStamp
-                    assert identity_check(request) is True
 
                 else:  # POST 说明是display的修改,但是没登陆,自动错误
                     raise SystemError
@@ -676,9 +675,21 @@ def index(request):  # 主页
     double_list = ['航模', '绘画', '书法']
     function_room_list = room_list.exclude( # 功能房
         Rid__icontains="R").filter(Rstatus=Room.Status.PERMITTED).filter(~Q(Rtitle__icontains="研讨") | Q(Rtitle__icontains="绘画") | Q(Rtitle__icontains="航模") | Q(Rtitle__icontains="书法")).order_by('Rid')
+    now = datetime.now()
     occupied_rooms = Appoint.objects.not_canceled().filter(
-        Astart__lte=datetime.now(), Afinish__gte=datetime.now()).values('Room')
-    available_room_list = function_room_list.exclude(Rid__in=occupied_rooms) # 空闲房间
+        Astart__lte=now + timedelta(minutes=15), Afinish__gte=now).values('Room')
+    tomorrow = datetime.today() + timedelta(days=1)
+    future_appointments = Appoint.objects.not_canceled().filter(
+        Astart__gte=datetime.now() + timedelta(minutes=15), Astart__lt=tomorrow
+    )
+    room_appointments = {room.Rid: None for room in room_list}
+    for appointment in future_appointments:
+        room_appointments[appointment.Room.Rid] = min(room_appointments[appointment.Room.Rid] or timedelta(1), appointment.Astart - now)
+    def format(delta):
+        if delta is None: return None
+        hour, rem = divmod(delta.seconds, 3600)
+        return f"{rem // 60}min" if hour == 0 else f"{hour}h{rem // 60}min"
+    room_info = [(room, {'Room': room.Rid} in occupied_rooms, format(room_appointments[room.Rid])) for room in function_room_list]
 
     russian_room_list = room_list.filter(Rstatus=Room.Status.PERMITTED).filter( # 俄文楼
         Rid__icontains="R").order_by('Rid')
