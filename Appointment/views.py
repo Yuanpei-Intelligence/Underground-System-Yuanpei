@@ -670,6 +670,7 @@ def index(request):  # 主页
     # 处理信息展示
     room_list = Room.objects.all()
     display_room_list = room_list.filter(Rstatus=Room.Status.SUSPENDED).order_by('-Rtitle')
+    statistics_info = [(room, (room.Rpresent * 10) // (room.Rmax or 1)) for room in display_room_list]
     talk_room_list = room_list.filter( # 研讨室
         Rtitle__icontains="研讨").filter(Rstatus=Room.Status.PERMITTED).order_by('Rmin', 'Rid')
     double_list = ['航模', '绘画', '书法']
@@ -689,7 +690,7 @@ def index(request):  # 主页
         if delta is None: return None
         hour, rem = divmod(delta.seconds, 3600)
         return f"{rem // 60}min" if hour == 0 else f"{hour}h{rem // 60}min"
-    room_info = [(room, {'Room': room.Rid} in occupied_rooms, format(room_appointments[room.Rid])) for room in function_room_list]
+    room_info = [(room, {'Room': room.Rid} in occupied_rooms, format(room_appointments[room.Rid])) for room in talk_room_list]
 
     russian_room_list = room_list.filter(Rstatus=Room.Status.PERMITTED).filter( # 俄文楼
         Rid__icontains="R").order_by('Rid')

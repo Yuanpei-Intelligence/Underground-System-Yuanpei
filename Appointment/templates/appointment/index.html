@@ -138,7 +138,9 @@
 					<div class="row justify-content-center">
 						<ul class="nav nav-tabs nav-tabs-solid nav-justified col-10" role="tablist">
 							<li class="nav-item">
-								<a class="nav-link active" data-toggle="tab" role="tab" href="#available">房间状态</a>
+								<a class="nav-link active" data-toggle="tab" role="tab" href="#available">
+									临时预约&nbsp;<i class="fas fa-info-circle" data-toggle="tooltip" title="房间空闲且距下场预约开始超过15分钟可直接刷卡进入"></i>
+								</a>
 							</li>
 							<li class="nav-item">
 								<a class="nav-link" data-toggle="tab" role="tab" href="#statistics">实时人数</a>
@@ -169,10 +171,6 @@
 												<p class="col p-0 m-0">{{ room.Rtitle }}</p>
 											</li>
 											<li class="row mx-0 mt-2">
-												<i class="col-0 mt-1 far fa fa-child"></i>
-												<p class="col p-0 m-0">{{ room.Rmin }}-{{ room.Rmax }}人可用</p>
-											</li>
-											<li class="row mx-0 mt-2">
 												{% if delta is not None %}
 												<i class="col-0 mt-1 far fa fa-history"></i> 
 												<p class="col p-0 m-0"> {{ delta }}
@@ -197,40 +195,34 @@
 
 						<!--  BEGIN STATISTICS TAB  -->
 						<div class="tab-pane fade show" id="statistics" role="tabpanel">
-							<div class="row justify-content-center" >
-								<div class="col-md-9">
-									<!-- Slider -->
-									<div class="doctor-slider slider doctor2-slider">
-									{% for display_room in display_room_list %}
-										<!-- Slider Item -->
-										<div class="speicality-item text-center" style="width: 160px;">
-											<div class="speicality-img" style=" margin: 0 auto">
-												<img src="{% static 'assets/img/RoomIcon/' %}{{display_room.Rid}}.png" class="img-fluid" alt="Speciality" style="border-radius: 100%;width: 100%;">
-												
-												<!--<img src="{% static 'assets/img/specialities/specialities-01.jpg' %}" class="img-fluid" alt="Speciality">
-												-->
-												<!--<span><i class="fa fa-circle" aria-hidden="true"></i></span>
-												-->
-												</div>
-											<!--<h4>{{display_room}}<br/>
-											{{display_room.Rpresent}}/{{display_room.Rmax}}</h4>
-											-->
-											<br/>
-											<h5>{{display_room}}</h5>
-											{% if display_room.Rpresent < display_room.Rmax %}
-											<h3 style="color:balck;">{{display_room.Rpresent}}/{{display_room.Rmax}}</h3>
-											{%else%}
-											<h3 style="color: crimson;">{{display_room.Rpresent}}/{{display_room.Rmax}}</h3>
+							<div class="row justify-content-center overflow-auto" style="height: 25vh;">
+								{% for room, crowd in statistics_info %}
+								<div class="col-md-2 col-sm-4 profile-widget m-2">
+									<div class="pro-content">
+										<div class="row m-0">
+											<h2 class="title col-0 my-auto mr-1">{{ room.Rid }}</h2>
+											{% if crowd < 4 %}
+											<i class="col-0 my-auto fas fa-user-check text-success" data-toggle="tooltip" title="人数较少"></i>
+											{% elif crowd < 7 %}
+											<i class="col-0 my-auto fas fa-user-friends text-warning" data-toggle="tooltip" title="部分占用"></i>
+											{% else%}
+											<i class="col-0 my-auto fas fa-users text-danger" data-toggle="tooltip" title="人数较多"></i>
 											{% endif %}
-										</div>	
-										<!-- /Slider Item -->
-									
-									{% endfor %}	
+										</div>
+										<ul class="available-info">
+											<li class="row mx-0 mt-2">
+												<i class="col-0 mt-1 far fa fa-compass"></i>
+												<p class="col p-0 m-0">{{ room.Rtitle }}</p>
+											</li>
+											<li class="row mx-0 mt-2">
+												<i class="col-0 mt-1 far fa fa-child"></i> 
+												<p class="col p-0 mr-0" style="margin-left: 1px;">{{ room.Rpresent }}&nbsp;/&nbsp;{{ room.Rmax }}</p>
+											</li>
+										</ul>
 									</div>
-									<!-- /Slider -->
-									
 								</div>
-							</div>		
+								{% endfor %}
+							</div>
 						</div>
 						<!--  END STATISTICS TAB  -->
 
