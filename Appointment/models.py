@@ -24,6 +24,7 @@ class College_Announcement(models.Model):
 
 class Student(models.Model):
     Sid = models.CharField('学号', max_length=10, primary_key=True)
+    Secret = models.CharField('密码', max_length=50)
     Sname = models.CharField('姓名', max_length=64)
     Scredit = models.IntegerField('信用分', default=3)
     superuser = models.IntegerField('超级用户', default=0)
@@ -216,3 +217,29 @@ from Appointment.utils.scheduler_func import cancel_scheduler
 @receiver(pre_delete,sender=Appoint)
 def before_delete_Appoint(sender,instance,**kwargs):
     cancel_scheduler(instance.Aid)
+
+
+class SidAndWid(models.Model):
+    Sid_id = models.ForeignKey(Student, verbose_name='学生id外键', on_delete=models.CASCADE)
+    Wxid = models.CharField('wxid', max_length=50)
+    status = models.IntegerField('审核', default=0)  # 0 待审核 1已通过
+    Rid_id = models.ForeignKey(Room, verbose_name='房间号id外键', on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = '学生微信通知表'
+        verbose_name_plural = verbose_name
+        ordering = ['Sid_id']
+
+
+class Teacher(models.Model):
+    Tid = models.CharField('老师号', max_length=10, primary_key=True)
+    Secret = models.CharField('密码', max_length=50)
+    Sname = models.CharField('姓名', max_length=64)
+    Scredit = models.IntegerField('信用分', default=3)
+    superuser = models.IntegerField('超级用户', default=0)
+    pinyin = models.CharField('拼音', max_length=20, null=True)
+
+    class Meta:
+        verbose_name = '教师表'
+        verbose_name_plural = verbose_name
+        ordering = ['Tid']

@@ -1,11 +1,12 @@
 import os
 import json
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(BASE_DIR)
 class LongTermInfo():
     def __init__(self):
         # 读取json文件, 包括url地址、输入输出位置等
         try:
-            load_file = open("load_setting.json",'r')
+            load_file = open(os.path.join("Appointment","load_setting.json"),'r')
         except:
             raise IOError("Can not found load_setting.json.")
         
@@ -20,19 +21,19 @@ class LongTermInfo():
         except:
             raise IndexError("Can not find necessary field, please check your json file.")
 
-        # 读取敏感密码参数
-        try:
-            load_file = open("token.json",'r')
-        except:
-            raise IOError("Can not found token.json. Please use local debug mode instead.")
-
-        try:
-            load_json = json.load(load_file)
-            load_file.close()
-            self.YPPF_salt = load_json['YPPF_salt']
-            self.wechat_salt = load_json['wechat_salt']
-        except:
-            raise IndexError("Can not find token field, please check your json file.")
+        # # 读取敏感密码参数
+        # try:
+        #     load_file = open(os.path.join("Appointment","token.json"),'r')
+        # except:
+        #     raise IOError("Can not found token.json. Please use local debug mode instead.")
+        #
+        # try:
+        #     load_json = json.load(load_file)
+        #     load_file.close()
+        #     self.YPPF_salt = load_json['YPPF_salt']
+        #     self.wechat_salt = load_json['wechat_salt']
+        # except:
+        #     raise IndexError("Can not find token field, please check your json file.")
 
         # 设置全局参数
         # added by wxy 人数检查
@@ -82,6 +83,7 @@ class MyMD5PasswordHasher(MD5PasswordHasher):
         encoded_2 = self.encode(password)
         return encoded.upper() == encoded_2.upper()
 
-hash_identity_coder = MyMD5PasswordHasher(salt=global_info.YPPF_salt)
-hash_wechat_coder = MyMD5PasswordHasher(salt=global_info.wechat_salt)
+hash_identity_coder = MyMD5PasswordHasher(salt='use_for_debug')#global_info.YPPF_salt)
+hash_wechat_coder = MyMD5PasswordHasher(salt='use_for_debug')#(salt=global_info.wechat_salt)
 
+print(hash_identity_coder.encode('123456'))

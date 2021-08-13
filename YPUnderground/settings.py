@@ -92,11 +92,11 @@ DATABASES = {
     # create database underground charset='utf8';
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'yuanpei_underground',
-        'HOST': '127.0.0.1',
+        'NAME': 'beida',
+        'HOST': '82.157.180.101',
         'PORT': 3306,
         'USER': 'root',
-        'PASSWORD': '4401024839', # modified by YHT
+        'PASSWORD': 'abc123456', # modified by YHT
         # 'OPTIONS': {
         #     "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         # }

@@ -1,10 +1,10 @@
 # 数据库模型与操作
 import os as os
 import pypinyin  # 支持拼音搜索系统
-from Appointment.models import Student, Room, Appoint, College_Announcement
+from Appointment.models import Student, Room, Appoint, College_Announcement,Teacher,SidAndWid
 from django.db.models import Q  # modified by wxy
 from django.db import transaction  # 原子化更改数据库
-
+import requests
 # Http操作相关
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse  # Json响应
@@ -79,7 +79,8 @@ def identity_check(request):    # 判断用户是否是本人
 # 重定向到登录网站
 def direct_to_login(request, islogout=False):
     params = request.build_absolute_uri('index')
-    urls = global_info.login_url + "?origin=" + params
+    # urls = request.get_full_path_info('index')#params+'?Sid=1800017704&Secret=123456' #
+    urls=params+'?Sid=1800017704&Secret=123456'
     if islogout:
         urls = urls + "&is_logout=1"
     return urls
@@ -228,8 +229,8 @@ def cameracheck(request):   # 摄像头post的后端函数
 @csrf_exempt
 def cancelAppoint(request):
     # 身份确认检查
-    if not identity_check(request):
-        return redirect(direct_to_login(request))
+    # if not identity_check(request):
+    #     return redirect(direct_to_login(request))
     return scheduler_func.cancelFunction(request)
 
 @csrf_exempt
@@ -280,9 +281,9 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
 # tag searchadmin_index
 def admin_index(request):   # 我的账户也主函数
     # 用户校验
-    if not identity_check(request):
-        print(direct_to_login(request))
-        return redirect(direct_to_login(request))
+    # if not identity_check(request):
+    #     print(direct_to_login(request))
+    #     return redirect(direct_to_login(request))
     warn_code = 0
     if request.GET.get("warn_code", None) is not None:
         warn_code = int(request.GET['warn_code'])
@@ -334,8 +335,8 @@ def admin_index(request):   # 我的账户也主函数
 # modified by wxy
 # tag searchadmin_credit
 def admin_credit(request):
-    if not identity_check(request):
-        return redirect(direct_to_login(request))
+    # if not identity_check(request):
+    #     return redirect(direct_to_login(request))
 
     Sid = request.session['Sid']
 
@@ -477,19 +478,25 @@ def index(request):  # 主页
 
     # 用户校验
     if global_info.account_auth:
+        print(111111111111)
         if not identity_check(request):
+            print(22222222222222)
             try:
+                print(333333333333333333333)
                 if request.method == "GET":
                     stu_id_ming = request.GET['Sid']
+
                     stu_id_code = request.GET['Secret']
+                    print(stu_id_code)
                     request.session['Sid'] = stu_id_ming
                     request.session['Secret'] = stu_id_code
                     assert identity_check(request) is True
-
+#'http://127.0.0.1:8000/appointment/index?Sid=1800017704&Secret=123456'
                 else:  # POST 说明是display的修改,但是没登陆,自动错误
                     raise SystemError
-            except:
-                return redirect(direct_to_login(request))
+            except Exception as e:
+                print(e)
+                # return redirect(direct_to_login(request,islogout=True))
 
                 # 至此获得了登录的授权 但是这个人可能不存在 加判断
             try:
@@ -589,8 +596,8 @@ def index(request):  # 主页
 
 # tag searcharrange_time
 def arrange_time(request):
-    if not identity_check(request):
-        return redirect(direct_to_login(request))
+    # if not identity_check(request):
+    #     return redirect(direct_to_login(request))
     if request.method == 'GET':
         try:
             Rid = request.GET.get('Rid')
@@ -656,8 +663,8 @@ def arrange_time(request):
 # tag searcharrange_talk
 def arrange_talk_room(request):
 
-    if not identity_check(request):
-        return redirect(direct_to_login(request))
+    # if not identity_check(request):
+    #     return redirect(direct_to_login(request))
     # search_time = request.POST.get('search_time')
     try:
         assert request.method == "GET"
@@ -752,8 +759,8 @@ def arrange_talk_room(request):
 
 # tag searchcheck_out
 def check_out(request):  # 预约表单提交
-    if not identity_check(request):
-        return redirect(direct_to_login(request))
+    # if not identity_check(request):
+    #     return redirect(direct_to_login(request))
     temp_time = datetime.now()
     warn_code = 0
     try:
@@ -879,3 +886,33 @@ def logout(request):    # 登出系统
         # return redirect(reverse("Appointment:index"))
     else:
         return redirect(reverse("Appointment:index"))
+from django.forms.models import model_to_dict #序列化数据
+def teacher_login(request):
+    try:
+        result_post = json.loads(request.body)
+    except:
+        result_post = request.POST
+    systemDict = {}
+    for key in result_post:
+        systemDict[key] = result_post.get(key)
+    if Teacher.objects.filter(Tid=systemDict['Tid']):
+        if Teacher.objects.get(Tid=systemDict['Tid']).Secret==systemDict['Secret']:
+            request.session['Tid']=systemDict['Tid']
+            return JsonResponse({'data':'teacher login success!'})
+        else:
+            return JsonResponse({'data': 'teacher password error!'})
+    else:
+        return JsonResponse({'data': 'teacher not exist!'})
+from Appointment.utils.wx_sendcheck import wx_sendUser
+def teacher_check_list(request):
+    results = SidAndWid.objects.filter(status=0)
+    list_all = []
+    for i in results:
+        msg = model_to_dict(Room.objects.get(Rid=i.Rid_id_id),exclude=['Rstart','Rfinish','Rlatest_time'])
+        msg['student_name'] = i.Sid_id.Sname
+        SidAndWid.objects.filter(Wxid=i.Wxid).update(status=1)
+        wid = i.Wxid
+        wx_sendUser(str(msg),wid)
+        list_all.append(msg)
+    return JsonResponse({'code':200,'data':list_all},safe=False)
+
