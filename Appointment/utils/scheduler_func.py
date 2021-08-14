@@ -335,8 +335,14 @@ def addAppoint(contents):  # 添加预约, main function
                 appoint.students.add(student)
             appoint.save()
 
+            # written by dyh: 在Astart将状态变为PROGRESSING
+            scheduler.add_job(web_func.startAppoint,
+                              args=[appoint.Aid],
+                              id=f'{appoint.Aid}_start',
+                              next_run_time=Astart)
+
             # write by cdf start2  # 添加定时任务：finish
-            scheduler.add_job(web_func.finishFunction,
+            scheduler.add_job(web_func.finishAppoint,
                               args=[appoint.Aid],
                               id=f'{appoint.Aid}_finish',
                               next_run_time=Afinish)  # - timedelta(minutes=45))

@@ -557,26 +557,26 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     journal.write("开门\n")
     journal.close()
     '''
-    try:
-        with transaction.atomic():
-            for now_appoint in stu_appoint:
-                if (now_appoint.Astatus == Appoint.Status.APPOINTED and datetime.now() <=
-                        now_appoint.Astart + timedelta(minutes=15)):
-                    now_appoint.Astatus = Appoint.Status.PROCESSING
-                    now_appoint.save()
-    except Exception as e:
-        operation_writer(global_info.system_log,
-                         "可以开门却不开门的致命错误，房间号为" +
-                         str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
-                         "func[doorcheck]",
-                         "Error")
-        cardcheckinfo_writer(student, room, False, True)
-        return JsonResponse(  # 未知错误
-            {
-                "code": 1,
-                "openDoor": "false",
-            },
-            status=400)
+    # try:
+    #     with transaction.atomic():
+    #         for now_appoint in stu_appoint:
+    #             if (now_appoint.Astatus == Appoint.Status.APPOINTED and datetime.now() <=
+    #                     now_appoint.Astart + timedelta(minutes=15)):
+    #                 now_appoint.Astatus = Appoint.Status.PROCESSING
+    #                 now_appoint.save()
+    # except Exception as e:
+    #     operation_writer(global_info.system_log,
+    #                      "可以开门却不开门的致命错误，房间号为" +
+    #                      str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
+    #                      "func[doorcheck]",
+    #                      "Error")
+    #     cardcheckinfo_writer(student, room, False, True)
+    #     return JsonResponse(  # 未知错误
+    #         {
+    #             "code": 1,
+    #             "openDoor": "false",
+    #         },
+    #         status=400)
     cardcheckinfo_writer(student, room, True, True)
     return JsonResponse({
         "code": 0,

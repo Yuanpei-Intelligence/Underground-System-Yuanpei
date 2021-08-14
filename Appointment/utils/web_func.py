@@ -67,66 +67,72 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
     return original_qualified_rate
 
 
-def finishFunction(Aid):  # 结束预约时的定时程序
-    # 变更预约状态
-    appoint = Appoint.objects.get(Aid=Aid)
-    mins15 = timedelta(minutes=15)
+def startAppoint(Aid):  # 开始预约时的定时程序
+    try:
+        appoint = Appoint.object.get(Aid=Aid)
+    except:
+        utils.operation_writer(
+            global_info.system_log, f"预约{str(Aid)}意外消失", "func[web_func:startAppoint]", "Error")
+
+    if appoint.Astatus == Appoint.Status.APPOINTED:     # 顺利开始
+        appoint.Astatus = Appoint.Status.PROCESSING
+        appoint.save()
+        utils.operation_writer(
+            global_info.system_log, f"预约{str(Aid)}的状态变为{Appoint.Status.PROCESSING}: 开始", "func[web_func:startAppoint]")
+
+    elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常
+        utils.operation_writer(
+            global_info.system_log, f"预约{str(Aid)}的状态异常: {str(appoint.Astatus)}", "func[web_func:startAppoint]", "Error")
+
+
+def finishAppoint(Aid):  # 结束预约时的定时程序
+    try:
+        appoint = Appoint.object.get(Aid=Aid)
+    except:
+        utils.operation_writer(
+            global_info.system_log, f"预约{str(Aid)}意外消失", "func[web_func:finishAppoint]", "Error")
+    
+    
     # 避免直接使用全局变量! by pht
     adjusted_camera_qualified_check_rate = global_info.camera_qualified_check_rate
-    try:
-        # 如果处于进行中，表示没有迟到，只需检查人数
-        if appoint.Astatus == Appoint.Status.PROCESSING:
 
-            # 摄像头出现超时问题，直接通过
-            if datetime.now() - appoint.Room.Rlatest_time > mins15:
-                appoint.Astatus = Appoint.Status.CONFIRMED  # waiting
-                appoint.save()
-                utils.operation_writer(appoint.major_student.Sid, "顺利完成预约" +
-                                 str(appoint.Aid) + ",设为Confirm", "func[finishAppoint]", "OK")
-            else:
-                if appoint.Acamera_check_num == 0:
+    # 如果处于进行中，表示没有迟到，只需检查人数
+    if appoint.Astatus == Appoint.Status.PROCESSING:
+
+        # 摄像头出现超时问题，直接通过
+        if datetime.now() - appoint.Room.Rlatest_time > timedelta(minutes=15):
+            appoint.Astatus = Appoint.Status.CONFIRMED  # waiting
+            appoint.save()
+            utils.operation_writer(
+                appoint.major_student.Sid, f"预约{str(Aid)}的状态变为{Appoint.Status.CONFIRMED}: 顺利完成", "func[web_func:finishAppoint]", "OK")
+        else:
+            if appoint.Acamera_check_num == 0:
+                utils.operation_writer(
+                    global_info.system_log, f"预约{str(Aid)}的摄像头检测次数为零", "func[web_func:finishAppoint]", "Error")
+            # 检查人数是否足够
+
+            # added by pht: 需要根据状态调整 出于复用性和简洁性考虑在本函数前添加函数
+            # added by pht: 同时出于安全考虑 在本函数中重定义了本地rate 稍有修改 避免出错
+            adjusted_camera_qualified_check_rate = get_adjusted_qualified_rate(
+                original_qualified_rate=adjusted_camera_qualified_check_rate,
+                appoint=appoint
+            )
+
+            if appoint.Acamera_ok_num < appoint.Acamera_check_num * adjusted_camera_qualified_check_rate - 0.01:  # 人数不足
+                status, tempmessage = utils.appoint_violate(
+                    appoint, Appoint.Reason.R_TOOLITTLE)
+                if not status:
                     utils.operation_writer(
-                        global_info.system_log, "预约"+str(appoint.Aid)+"摄像头检测次数为0", "finishAppoint", "Problem")
-                # 检查人数是否足够
+                        global_info.system_log, f"预约{str(Aid)}因人数不够而违约时出现异常: {tempmessage}", "func[web_func:finishAppoint]", "Error")
 
-                # added by pht: 需要根据状态调整 出于复用性和简洁性考虑在本函数前添加函数
-                # added by pht: 同时出于安全考虑 在本函数中重定义了本地rate 稍有修改 避免出错
-                adjusted_camera_qualified_check_rate = get_adjusted_qualified_rate(
-                    original_qualified_rate=adjusted_camera_qualified_check_rate,
-                    appoint=appoint,
-                )
-
-                if appoint.Acamera_ok_num < appoint.Acamera_check_num * adjusted_camera_qualified_check_rate - 0.01:  # 人数不足
-                    status, tempmessage = utils.appoint_violate(
-                        appoint, Appoint.Reason.R_TOOLITTLE)
-                    if not status:
-                        utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
-                                         "因人数不够而违约时出现异常: "+tempmessage, "func[finishAppoint]", "Error")
-
-                else:   # 通过
-                    appoint.Astatus = Appoint.Status.CONFIRMED
-                    appoint.save()
-
-        # 表示压根没刷卡
-        elif appoint.Astatus == Appoint.Status.APPOINTED:
-            # 特殊情况，不违约(地下室小舞台&康德，以及俄文楼)
-            if (appoint.Room_id in {"B109A", "B207"}) or ('R' in appoint.Room_id):
+            else:   # 通过
                 appoint.Astatus = Appoint.Status.CONFIRMED
                 appoint.save()
-                utils.operation_writer(appoint.major_student.Sid, "顺利完成预约" +
-                                 str(appoint.Aid) + ",设为Confirm", "func[finishAppoint]", "OK")
-            else:
-                status, tempmessage = utils.appoint_violate(
-                    appoint, Appoint.Reason.R_LATE)
-                if not status:
-                    utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
-                                     "因迟到而违约时出现异常: "+tempmessage, "func[finishAppoint]", "Error")
 
-    # 如果上述过程出现不可预知的错误，记录
-    except Exception as e:
-        utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid)+"在完成时出现异常:" +
-                         str(e)+",提交为waiting状态，请处理！", "func[finishAppoint]", "Error")
-        appoint.Astatus = Appoint.Status.WAITING  # waiting
+    elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常
+        utils.operation_writer(
+            global_info.system_log, f"预约{str(Aid)}的状态异常: {str(appoint.Astatus)}", "web_func.finishAppoint", "Error")
+        appoint.Astatus = Appoint.Status.WAITING
         appoint.save()
 
 
