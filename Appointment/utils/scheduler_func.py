@@ -47,6 +47,7 @@ def clear_appointments():
 
 def cancel_scheduler(aid):  # models.py中使用
     try:
+        scheduler.remove_job(f'{aid}_start')
         scheduler.remove_job(f'{aid}_finish')
         try:
             scheduler.remove_job(f'{aid}_start_wechat')
@@ -101,6 +102,7 @@ def cancelFunction(request):  # 取消预约
         appoint_room_name = appoint.Room.Rtitle
         appoint.cancel()
         try:
+            scheduler.remove_job(f'{appoint.Aid}_start')
             scheduler.remove_job(f'{appoint.Aid}_finish')
         except:
             utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
