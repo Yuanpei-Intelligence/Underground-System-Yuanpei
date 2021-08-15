@@ -229,10 +229,11 @@ def cameracheck(request):   # 摄像头post的后端函数
                                 content.Acamera_ok_num += 1
                                 content.Acheck_status = Appoint.Check_status.PASSED
                         # 如果随机失败，锁定上一分钟的结果
-                        elif content.Acheck_status == Appoint.Check_status.FAILED:
-                            # 如果本次检测合规，宽容时也算上一次通过（因为一分钟只检测两次）
-                            if temp_stu_num >= num_need:  
-                                content.Acamera_ok_num += 1
+                        else:
+                            if content.Acheck_status == Appoint.Check_status.FAILED:
+                                # 如果本次检测合规，宽容时也算上一次通过（因为一分钟只检测两次）
+                                if temp_stu_num >= num_need:  
+                                    content.Acamera_ok_num += 1
                             # 本分钟暂无记录
                             content.Acheck_status = Appoint.Check_status.UNSAVED
                     else:
