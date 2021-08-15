@@ -104,8 +104,9 @@ class Appoint(models.Model):
     class Check_status(models.IntegerChoices):
         FAILED = 0  # 预约在此分钟的检查尚未通过
         PASSED = 1  # 预约在特定分钟内的检查是通过的
+        UNSAVED = 2 # 预约在此分钟内尚未记录检测状态
     Acheck_status = models.SmallIntegerField(
-        '检测状态', choices=Check_status.choices, default=0)
+        '检测状态', choices=Check_status.choices, default=2)
 
     # 这里Room使用外键的话只能设置DO_NOTHING，否则删除房间就会丢失预约信息
     # 所以房间信息不能删除，只能逻辑删除

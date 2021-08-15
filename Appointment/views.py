@@ -211,27 +211,39 @@ def cameracheck(request):   # 摄像头post的后端函数
                 # added by wxy
                 # 检查人数：采样、判断、更新
                 # 人数在finishappoint中检查
+                # modified by pht - 2021/8/15
+                # 增加UNSAVED状态
+                # 逻辑是尽量宽容，因为一分钟只记录两次，两次随机大概率只有一次成功
+                # 所以没必要必须随机成功才能修改错误结果
                 rand = random.uniform(0, 1)
                 camera_lock.acquire()
                 with transaction.atomic():
-                    if rand > 1 - global_info.check_rate:
-                        # content.Acamera_check_num += 1
-                        # if temp_stu_num >= num_need:
-                        #     content.Acamera_ok_num += 1
-                        if now_time.minute != room_previous_check_time.minute:  # 说明此时是新的一分钟
+                    if now_time.minute != room_previous_check_time.minute or\
+                        content.Acheck_status == Appoint.Check_status.UNSAVED: 
+                        # 说明是新的一分钟或者本分钟还没有记录
+                        # 如果随机成功，记录新的检查结果
+                        if rand < global_info.check_rate:
                             content.Acheck_status = Appoint.Check_status.FAILED
                             content.Acamera_check_num += 1
                             if temp_stu_num >= num_need:  # 如果本次检测合规
                                 content.Acamera_ok_num += 1
                                 content.Acheck_status = Appoint.Check_status.PASSED
-                        else:  # 说明和上一次检测在同一分钟，此时希望：1、不增加检测次数 2、如果合规则增加ok次数
-                            if content.Acheck_status == Appoint.Check_status.FAILED:
-                                # 当前不合规；如果这次检测合规，那么认为本分钟合规
-                                if temp_stu_num >= num_need:
-                                    content.Acamera_ok_num += 1
-                                    content.Acheck_status = Appoint.Check_status.PASSED
-                            # else:当前已经合规，不需要额外操作
-                        content.save()
+                        # 如果随机失败，锁定上一分钟的结果
+                        elif content.Acheck_status == Appoint.Check_status.FAILED:
+                            # 如果本次检测合规，宽容时也算上一次通过（因为一分钟只检测两次）
+                            if temp_stu_num >= num_need:  
+                                content.Acamera_ok_num += 1
+                            # 本分钟暂无记录
+                            content.Acheck_status = Appoint.Check_status.UNSAVED
+                    else:
+                        # 和上一次检测在同一分钟，此时：1.不增加检测次数 2.如果合规则增加ok次数
+                        if content.Acheck_status == Appoint.Check_status.FAILED:
+                            # 当前不合规；如果这次检测合规，那么认为本分钟合规
+                            if temp_stu_num >= num_need:
+                                content.Acamera_ok_num += 1
+                                content.Acheck_status = Appoint.Check_status.PASSED
+                        # else:当前已经合规，不需要额外操作
+                    content.save()
                 camera_lock.release()
                 # add end
         except Exception as e:
