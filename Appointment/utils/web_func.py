@@ -80,9 +80,9 @@ def startAppoint(Aid):  # 开始预约时的定时程序
         utils.operation_writer(
             global_info.system_log, f"预约{str(Aid)}的状态变为{Appoint.Status.PROCESSING}: 开始", "func[web_func:startAppoint]")
 
-    elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常
+    elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常，本该不存在这个任务
         utils.operation_writer(
-            global_info.system_log, f"预约{str(Aid)}的状态异常: {str(appoint.Astatus)}", "func[web_func:startAppoint]", "Error")
+            global_info.system_log, f"预约{str(Aid)}的状态异常: {str(appoint.Astatus)}", "func[web_func:startAppoint]", "Problem")
 
 
 def finishAppoint(Aid):  # 结束预约时的定时程序
