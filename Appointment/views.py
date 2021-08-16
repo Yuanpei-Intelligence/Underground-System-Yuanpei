@@ -404,159 +404,129 @@ def admin_credit(request):
 
 
 # added by wxy
+# modified by dyh
 @csrf_exempt
 def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
 
-    get_post = request.get_full_path().split("?")[1].split("&")
-    get_post = {i.split("=")[0]: i.split("=")[1] for i in get_post}
+    # --------- 基本信息 --------- #
 
-    # 获取房间基本信息，如果是自习室就开门
+    Sid, Rid = request.GET.get("Sid", None), request.GET.get("Rid", None)
+    student, room, now_time, min15 = None, None, datetime.now(), timedelta(minutes=15)
     try:
-        Sid, Rid = get_post['Sid'], get_post['Rid']
-
-        assert Sid is not None
-        assert Rid is not None
-
         student = Student.objects.get(Sid=Sid)
-
+        all_Rid = [room.Rid for room in Room.objects.all()]
         Rid = doortoroom(Rid)
-        all_room = Room.objects.all()
-        all_rid = [room.Rid for room in all_room]
-        if Rid[:4] in all_rid:  # 表示增加了一个未知的A\B号
+        if Rid[:4] in all_Rid:  # 表示增加了一个未知的A\B号
             Rid = Rid[:4]
-        room = None
-        if Rid in all_rid:  # 如果在房间列表里，考虑类型
-            room = Room.objects.get(Rid=Rid)
-            if room.Rstatus == Room.Status.FORBIDDEN:  # 禁止使用的房间
-                cardcheckinfo_writer(student, room, False, False)
-                return JsonResponse(
-                {
-                    "code": 1,
-                    "openDoor": "false",
-                },
-                status=400)
-            if room.Rstatus == Room.Status.SUSPENDED:  # 自习室
-                if room.RIsAllNight == Room.IsAllNight.Yes:  # 通宵自习室
-                    cardcheckinfo_writer(student, room, True, True)
-                    return JsonResponse({
-                        "code": 0,
-                        "openDoor": "true"
-                    }, status=200)
-                else: #不是通宵自习室
-                    if datetime.now() >= datetime(datetime.now().year,datetime.now().month,datetime.now().day,room.Rstart.hour,room.Rstart.minute) and datetime.now() <= datetime(datetime.now().year,datetime.now().month,datetime.now().day,room.Rfinish.hour,room.Rfinish.minute):
-                        # 在开放时间内
-                        cardcheckinfo_writer(student, room, True, True)
-                        return JsonResponse({
-                        "code": 0,
-                        "openDoor": "true"
-                        },status=200)
-                    else: #不在开放时间内
-                        cardcheckinfo_writer(student, room, False, False)
-                        return JsonResponse(
-                        {
-                            "code": 1,
-                         "openDoor": "false",
-                        },
-                        status=400)
-            # 否则是预约房，进入后续逻辑
-        else:  # 不在房间列表
-            raise SystemError
-    except Exception as e:
-        cardcheckinfo_writer(student, room, False, True)
-        return JsonResponse(
-            {
-                "code": 1,
-                "openDoor": "false",
-            },
-            status=400)
-
-    # 检查预约者和房间是否匹配
-    # contents = {'Sid': str(Sid), 'kind': 'today'}
-
-    # --- modify by lhw: 临时预约 --- #
-    now_time = datetime.now()
-    appointments = Appoint.objects.not_canceled().filter(
-        Q(Astart__lte=now_time) & Q(Afinish__gte=now_time)
-        & Q(Room_id=Rid))  # 只选取当前时间位于预约时间段内的预约
-    stu_appoint = student.appoint_list.not_canceled()
-    # 获取刷卡者当前房间的可进行预约
-    stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
-                   and appoint.Astart.date() == datetime.now().date()
-                   and datetime.now() >= appoint.Astart-timedelta(minutes=15)
-                   and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
-
-    # 以下枚举所有无法开门情况
-    if len(appointments) and len(stu_appoint) == 0:
-        # 无法开门情况1：当前有预约，且自己没有15分钟内开始的预约。
+        room = Room.objects.get(Rid=Rid)
+    except:
+        user = student or global_info.system_log
+        operation_writer(user, f"学号{Sid}或房间号{Rid}错误", "func[views::door_check]", "Error")
         cardcheckinfo_writer(student, room, False, False)
-        return JsonResponse(
-            {
-                "code": 1,
-                "openDoor": "false",
-            },
-            status=400)
+        return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
-    if len(appointments) == 0 and len(stu_appoint) == 0:
-        # 情况2：或许可以发起临时预约。
-        # 首先检查该房间是否可以进行临时预约
-        if check_temp_appoint(room) == False:
-            cardcheckinfo_writer(student, room, False, False)
-            return JsonResponse({
-                "code": 1,
-                "openDoor": "false"
-            }, status=400)
-        # 该房间可以用于临时预约，检查时间是否合法
-        contents = {}
-        contents['Rid'] = Rid
-        contents['students'] = [Sid]
-        contents['Sid'] = Sid
-        contents['Astart'] = datetime(now_time.year, now_time.month, now_time.day,
-                                      now_time.hour, now_time.minute, 0)  # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
-        timeid = web_func.get_time_id(room, time(contents['Astart'].hour, contents['Astart'].minute))
-        endtime, valid = web_func.get_hour_time(room, timeid+1)
+    # --------- 直接进入 --------- #
 
-        # 注意，由于制度上不允许跨天预约，这里的逻辑也不支持跨日预约（比如从晚上23:00约到明天1:00）。
-        contents['Afinish'] = datetime(now_time.year, now_time.month, now_time.day, int(
-            endtime.split(':')[0]), int(endtime.split(':')[1]), 0)
-        contents['non_yp_num'] = 0
-        contents['Ausage'] = "临时预约"
-        contents['announcement'] = ""
-        contents['Atemp_flag'] = True
-        # 合法条件：为避免冲突，临时预约时长必须超过15分钟；预约时在房间可用时段
-        if (contents['Afinish'] - contents['Astart']) >= timedelta(minutes=15) and valid:
-            response = scheduler_func.addAppoint(contents)
-            if response.status_code == 200:
-                stu_appoint = student.appoint_list.not_canceled()
-                stu_appoint = [appoint for appoint in stu_appoint if appoint.Room_id == Rid
-                               and appoint.Astart.date() == datetime.now().date()
-                               and datetime.now() >= appoint.Astart-timedelta(minutes=15)
-                               and datetime.now() <= appoint.Afinish+timedelta(minutes=15)]
-                # 更新stu_appoint
-            else:
+    if room.Rstatus == Room.Status.FORBIDDEN:   # 禁止使用的房间
+        operation_writer(student, f"房间{Rid}刷卡拒绝：禁止使用", "func[views::door_check]")
+        cardcheckinfo_writer(student, room, False, False)
+        return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
+
+    if room.Rstatus == Room.Status.SUSPENDED:   # 自习室
+
+        if room.RIsAllNight == Room.IsAllNight.Yes: # 通宵自习室
+            operation_writer(student, f"房间{Rid}刷卡开门：通宵自习室", "func[views::door_check]")
+            cardcheckinfo_writer(student, room, True, True)
+            return JsonResponse({"code": 0, "openDoor": "true"}, status=200)
+        
+        else:   #不是通宵自习室
+            start = now_time.replace(hour=room.Rstart.hour, minute=room.Rstart.minute)
+            finish = now_time.replace(hour=room.Rfinish.hour, minute=room.Rfinish.minute)
+
+            if now_time >= start and now_time <= finish:    # 在开放时间内
+                operation_writer(student, f"房间{Rid}刷卡开门：自习室", "func[views::door_check]")
+                cardcheckinfo_writer(student, room, True, True)
+                return JsonResponse({"code": 0, "openDoor": "true"}, status=200)
+
+            else:   #不在开放时间内
+                operation_writer(student, f"房间{Rid}刷卡拒绝：自习室不开放", "func[views::door_check]")
                 cardcheckinfo_writer(student, room, False, False)
-                return JsonResponse(  # 无法预约（比如没信用分了）
-                    {
-                        "code": 1,
-                        "openDoor": "false"
-                    },
-                    status=400)
-        else:       # 预约时长不超过15分钟 或 预约时间不合法
-            cardcheckinfo_writer(student, room, False, False)
-            return JsonResponse({
-                "code": 1,
-                "openDoor": "false"
-            }, status=400)
+            return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
-    # 以下情况都能开门
-    ### --- modify end (2021.7.10) --- #
-    '''
-    # check the camera
-    journal = open("journal.txt","a")
-    journal.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    # journal.write('\t'+room.Rid+'\t')
-    journal.write("开门\n")
-    journal.close()
-    '''
+    # --------- 预约进入 --------- #
+
+    # 获取房间的预约
+    room_appoint = Appoint.objects.not_canceled().filter(   # 只选取接下来15分钟进行的预约
+        Astart__lte=now_time + min15, Afinish__gte=now_time, Room_id=Rid)
+
+    # --- modify by dyh: 更改规则 --- #
+    # --- modify by lhw: 临时预约 --- #
+
+    if len(room_appoint) != 0:  # 当前有预约
+
+        try:
+            stu_appoint = room_appoint.get(students__in=[student])
+        except: # 不是自己的预约
+            operation_writer(student, f"房间{Rid}刷卡拒绝：存在预约", "func[views::door_check]")
+            cardcheckinfo_writer(student, room, False, False)
+            return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
+
+        # 自己的预约
+        operation_writer(student, f"房间{Rid}刷卡开门：预约进入", "func[views::door_check]")
+        cardcheckinfo_writer(student, room, True, True)
+        return JsonResponse({"code": 0, "openDoor": "true"}, status=200)
+
+    else:   # 当前无预约
+
+        if check_temp_appoint(room) == False:   # 房间不可以临时预约
+            operation_writer(student, f"房间{Rid}刷卡拒绝：不可临时预约", "func[views::door_check]")
+            cardcheckinfo_writer(student, room, False, False)
+            return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
+
+        else:   # 该房间可以用于临时预约
+
+            # 注意，由于制度上不允许跨天预约，这里的逻辑也不支持跨日预约（比如从晚上23:00约到明天1:00）。
+            start = datetime(now_time.year, now_time.month, now_time.day,
+                             now_time.hour, now_time.minute, 0) # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
+            timeid = web_func.get_time_id(room, time(start.hour, start.minute))
+            finish, valid = web_func.get_hour_time(room, timeid + 1)
+            finish = datetime(now_time.year, now_time.month, now_time.day, int(
+                finish.split(':')[0]), int(finish.split(':')[1]), 0)
+
+            # 检查时间是否合法
+            # 合法条件：为避免冲突，临时预约时长必须超过15分钟；预约时在房间可用时段
+            if valid and finish - start >= timedelta(minutes=5):    # 时间合法（暂时将间隔定为5min）
+                contents = {
+                    'Rid': Rid,
+                    'students': [Sid],
+                    'Sid': Sid,
+                    'Astart': start,
+                    'Afinish': finish,
+                    'non_yp_num': 0,
+                    'Ausage': "临时预约",
+                    'announcement': "",
+                    'Atemp_flag': True
+                }
+                response = scheduler_func.addAppoint(contents)
+                
+                if response.status_code == 200: # 临时预约成功
+                    operation_writer(student, f"房间{Rid}刷卡开门：临时预约", "func[views::door_check]")
+                    cardcheckinfo_writer(student, room, True, True)
+                    return JsonResponse({"code": 0, "openDoor": "true"}, status=200)
+
+                else:   # 无法预约（比如没信用分了）
+                    operation_writer(student, f"房间{Rid}刷卡拒绝：临时预约失败（预约人不合法）", "func[views::door_check]") # TODO: 给个错误提示
+                    cardcheckinfo_writer(student, room, False, False)
+                    return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
+        
+            else:   # 预约时长不超过5分钟 或 预约时间不合法
+                operation_writer(student, f"房间{Rid}刷卡拒绝：临时预约失败（时间不合法）", "func[views::door_check]") # TODO: 给个错误提示
+                cardcheckinfo_writer(student, room, False, False)
+                return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
+
+    # --- modify end (2021.7.10) --- #
+    # --- modify end (2021.8.16) --- #
+
     # try:
     #     with transaction.atomic():
     #         for now_appoint in stu_appoint:
@@ -577,11 +547,6 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     #             "openDoor": "false",
     #         },
     #         status=400)
-    cardcheckinfo_writer(student, room, True, True)
-    return JsonResponse({
-        "code": 0,
-        "openDoor": "true"
-    }, status=200)
 
 # tag searchindex
 
