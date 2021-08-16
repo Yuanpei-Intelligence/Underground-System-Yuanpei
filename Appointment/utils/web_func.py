@@ -106,9 +106,9 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
             utils.operation_writer(
                 appoint.major_student.Sid, f"预约{str(Aid)}的状态变为{Appoint.Status.CONFIRMED}: 顺利完成", "func[web_func:finishAppoint]", "OK")
         else:
-            if appoint.Acamera_check_num == 0:
-                utils.operation_writer(
-                    global_info.system_log, f"预约{str(Aid)}的摄像头检测次数为零", "func[web_func:finishAppoint]", "Error")
+            #if appoint.Acamera_check_num == 0:
+            #    utils.operation_writer(
+            #        global_info.system_log, f"预约{str(Aid)}的摄像头检测次数为零", "func[web_func:finishAppoint]", "Error")
             # 检查人数是否足够
 
             # added by pht: 需要根据状态调整 出于复用性和简洁性考虑在本函数前添加函数
