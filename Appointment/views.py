@@ -594,6 +594,7 @@ def index(request):  # 主页
                     request.session['Sid'] = stu_id_ming
                     request.session['Secret'] = stu_id_code
                     request.session['timeStamp'] = timeStamp
+                    assert identity_check(request) is True
 
                 else:  # POST 说明是display的修改,但是没登陆,自动错误
                     raise SystemError
