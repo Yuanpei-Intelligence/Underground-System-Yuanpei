@@ -47,6 +47,7 @@ def clear_appointments():
 
 def cancel_scheduler(aid):  # models.py中使用
     try:
+        scheduler.remove_job(f'{aid}_start')
         scheduler.remove_job(f'{aid}_finish')
         try:
             scheduler.remove_job(f'{aid}_start_wechat')
@@ -101,6 +102,7 @@ def cancelFunction(request):  # 取消预约
         appoint_room_name = appoint.Room.Rtitle
         appoint.cancel()
         try:
+            scheduler.remove_job(f'{appoint.Aid}_start')
             scheduler.remove_job(f'{appoint.Aid}_finish')
         except:
             utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
@@ -268,6 +270,19 @@ def addAppoint(contents):  # 添加预约, main function
     # 接下来开始搜索数据库，上锁
     try:
         with transaction.atomic():
+
+            # 获取预约发起者,确认预约状态
+            try:
+                major_student = Student.objects.get(Sid=contents['Sid'])
+            except:
+                return JsonResponse(
+                    {
+                        'statusInfo': {
+                            'message': '发起人信息与登录信息不符,请不要在同一浏览器同时登录不同账号!',
+                        }
+                    },
+                    status=400)
+
             # 等待确认的和结束的肯定是当下时刻已经弄完的，所以不用管
             print("得到搜索列表")
             appoints = room.appoint_list.select_for_update().exclude(
@@ -298,17 +313,6 @@ def addAppoint(contents):  # 添加预约, main function
                                 }
                             },
                             status=400)
-            # 获取预约发起者,确认预约状态
-            try:
-                major_student = Student.objects.get(Sid=contents['Sid'])
-            except:
-                return JsonResponse(
-                    {
-                        'statusInfo': {
-                            'message': '发起人信息与登录信息不符,请不要在同一浏览器同时登录不同账号!',
-                        }
-                    },
-                    status=400)
 
             # 确认信用分符合要求
             try:
@@ -335,8 +339,14 @@ def addAppoint(contents):  # 添加预约, main function
                 appoint.students.add(student)
             appoint.save()
 
+            # written by dyh: 在Astart将状态变为PROGRESSING
+            scheduler.add_job(web_func.startAppoint,
+                              args=[appoint.Aid],
+                              id=f'{appoint.Aid}_start',
+                              next_run_time=Astart)
+
             # write by cdf start2  # 添加定时任务：finish
-            scheduler.add_job(web_func.finishFunction,
+            scheduler.add_job(web_func.finishAppoint,
                               args=[appoint.Aid],
                               id=f'{appoint.Aid}_finish',
                               next_run_time=Afinish)  # - timedelta(minutes=45))
