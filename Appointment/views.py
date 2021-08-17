@@ -632,32 +632,45 @@ def index(request):  # 主页
         request.session['Sname'] = Student.objects.get(
             Sid=request.session['Sid']).Sname
 
-    # 处理信息展示
+    #--------- 前端变量 ---------#
+
     room_list = Room.objects.all()
-    display_room_list = room_list.filter(Rstatus=Room.Status.SUSPENDED).order_by('-Rtitle')
-    statistics_info = [(room, (room.Rpresent * 10) // (room.Rmax or 1)) for room in display_room_list]
-    talk_room_list = room_list.filter( # 研讨室
-        Rtitle__icontains="研讨").filter(Rstatus=Room.Status.PERMITTED).order_by('Rmin', 'Rid')
-    double_list = ['航模', '绘画', '书法']
-    function_room_list = room_list.exclude( # 功能房
-        Rid__icontains="R").filter(Rstatus=Room.Status.PERMITTED).filter(~Q(Rtitle__icontains="研讨") | Q(Rtitle__icontains="绘画") | Q(Rtitle__icontains="航模") | Q(Rtitle__icontains="书法")).order_by('Rid')
-    now = datetime.now()
+    now, tomorrow = datetime.now(), datetime.today() + timedelta(days=1)
     occupied_rooms = Appoint.objects.not_canceled().filter(
-        Astart__lte=now + timedelta(minutes=15), Afinish__gte=now).values('Room')
-    tomorrow = datetime.today() + timedelta(days=1)
+        Astart__lte=now + timedelta(minutes=15), Afinish__gte=now).values('Room')   # 接下来有预约的房间
     future_appointments = Appoint.objects.not_canceled().filter(
-        Astart__gte=datetime.now() + timedelta(minutes=15), Astart__lt=tomorrow
-    )
+        Astart__gte=now + timedelta(minutes=15), Astart__lt=tomorrow)               # 接下来的预约
     room_appointments = {room.Rid: None for room in room_list}
-    for appointment in future_appointments:
-        room_appointments[appointment.Room.Rid] = min(room_appointments[appointment.Room.Rid] or timedelta(1), appointment.Astart - now)
-    def format(delta):
+    for appointment in future_appointments:                                         # 每个房间的预约
+        room_appointments[appointment.Room.Rid] = min(
+            room_appointments[appointment.Room.Rid] or timedelta(1), appointment.Astart - now)
+
+    def format(delta):  # 格式化timedelta，隐去0h
         if delta is None: return None
         hour, rem = divmod(delta.seconds, 3600)
         return f"{rem // 60}min" if hour == 0 else f"{hour}h{rem // 60}min"
-    room_info = [(room, {'Room': room.Rid} in occupied_rooms, format(room_appointments[room.Rid])) for room in talk_room_list]
 
-    russian_room_list = room_list.filter(Rstatus=Room.Status.PERMITTED).filter( # 俄文楼
+    #--------- 1,2 地下室状态部分 ---------#
+
+    double_list = ['航模', '绘画', '书法']
+    function_room_list = room_list.exclude(Rid__icontains="R").filter(Rstatus=Room.Status.PERMITTED).filter(
+        ~Q(Rtitle__icontains="研讨") | Q(Rtitle__icontains="绘画") | Q(Rtitle__icontains="航模") | Q(Rtitle__icontains="书法")).order_by('Rid')
+
+    #--------- 地下室状态：left tab ---------#
+    suspended_room_list = room_list.filter(
+        Rstatus=Room.Status.SUSPENDED).order_by('-Rtitle')                          # 开放房间
+    statistics_info = [(room, (room.Rpresent * 10) // (room.Rmax or 1))
+                       for room in suspended_room_list]                             # 开放房间人数统计
+
+    #--------- 地下室状态：right tab ---------#
+    talk_room_list = room_list.filter(                                              # 研讨室（展示临时预约）
+        Rtitle__icontains="研讨").filter(Rstatus=Room.Status.PERMITTED).order_by('Rmin', 'Rid')
+    room_info = [(room, {'Room': room.Rid} in occupied_rooms, format(               # 研讨室占用情况
+        room_appointments[room.Rid])) for room in talk_room_list]
+
+    #--------- 3 俄文楼部分 ---------#
+
+    russian_room_list = room_list.filter(Rstatus=Room.Status.PERMITTED).filter(     # 俄文楼
         Rid__icontains="R").order_by('Rid')
     russ_len = len(russian_room_list)
     if request.method == "POST":
