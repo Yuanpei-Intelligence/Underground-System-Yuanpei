@@ -438,12 +438,13 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             return JsonResponse({"code": 0, "openDoor": "true"}, status=200)
 
         else:  # 不是通宵自习室
-            start = now_time.replace(
-                hour=room.Rstart.hour, minute=room.Rstart.minute)
-            finish = now_time.replace(
-                hour=room.Rfinish.hour, minute=room.Rfinish.minute)
 
-            if now_time >= start and now_time <= finish:    # 在开放时间内
+            # 考虑到次晨的情况，判断一天内的时段
+            now = timedelta(hours=now_time.hour, minutes=now_time.minute)
+            start = timedelta(hours=room.Rstart.hour, minutes=room.Rstart.hour)
+            finish = timedelta(hours=room.Rfinish.hour, minutes=room.Rfinish.hour)
+
+            if (now >= min(start, finish) and now <= max(start, finish)) ^ (start > finish):   # 在开放时间内
                 cardcheckinfo_writer(student, room, True, True, f"刷卡开门：自习室")
                 return JsonResponse({"code": 0, "openDoor": "true"}, status=200)
 
