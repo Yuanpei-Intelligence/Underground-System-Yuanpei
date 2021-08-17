@@ -270,6 +270,19 @@ def addAppoint(contents):  # 添加预约, main function
     # 接下来开始搜索数据库，上锁
     try:
         with transaction.atomic():
+
+            # 获取预约发起者,确认预约状态
+            try:
+                major_student = Student.objects.get(Sid=contents['Sid'])
+            except:
+                return JsonResponse(
+                    {
+                        'statusInfo': {
+                            'message': '发起人信息与登录信息不符,请不要在同一浏览器同时登录不同账号!',
+                        }
+                    },
+                    status=400)
+
             # 等待确认的和结束的肯定是当下时刻已经弄完的，所以不用管
             print("得到搜索列表")
             appoints = room.appoint_list.select_for_update().exclude(
@@ -300,17 +313,6 @@ def addAppoint(contents):  # 添加预约, main function
                                 }
                             },
                             status=400)
-            # 获取预约发起者,确认预约状态
-            try:
-                major_student = Student.objects.get(Sid=contents['Sid'])
-            except:
-                return JsonResponse(
-                    {
-                        'statusInfo': {
-                            'message': '发起人信息与登录信息不符,请不要在同一浏览器同时登录不同账号!',
-                        }
-                    },
-                    status=400)
 
             # 确认信用分符合要求
             try:
