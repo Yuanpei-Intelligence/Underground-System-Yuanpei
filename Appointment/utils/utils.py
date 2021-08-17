@@ -172,6 +172,10 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
         message = '您发起了一条临时预约\n'
         message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
         message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
+    elif message_type == 'temp_appointment_fail':  # 临时预约失败
+        message = '您发起的临时预约失败\n'
+        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
+        message += '\n原因：'+reason
     else:
         # todo: 记得测试一下!为什么之前出问题的log就找不到呢TAT
         operation_writer(global_info.system_log,
@@ -363,9 +367,10 @@ def operation_writer(user, message, source, status_code="OK"):
     lock.release()
 
 
-def cardcheckinfo_writer(Student, Room, real_status, should_status):
+def cardcheckinfo_writer(Student, Room, real_status, should_status, message=None):
     CardCheckInfo.objects.create(Cardroom=Room, Cardstudent=Student,
-                                 CardStatus=real_status, ShouldOpenStatus=should_status)
+                                 CardStatus=real_status, ShouldOpenStatus=should_status, Message=message)
+
 
 def check_temp_appoint(room):
     return '研讨' in room.Rtitle

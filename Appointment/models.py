@@ -266,6 +266,9 @@ class CardCheckInfo(models.Model):
     ShouldOpenStatus = models.SmallIntegerField(
         '是否应该开门', choices=Status.choices, default=0)
     
+    Message = models.CharField(
+        '记录信息', max_length=256, null=True)
+    
     class Meta:
         verbose_name = "刷卡记录"
         verbose_name_plural = verbose_name
