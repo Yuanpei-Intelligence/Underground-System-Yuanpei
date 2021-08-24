@@ -307,8 +307,9 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
 
         #appoint = Appoint.objects.get(Aid=3333)
         # return JsonResponse({'data': appoint.toJson()}, status=200,json_dumps_params={'ensure_ascii': False})
-        nowdate = datetime.now().date()
-        enddate = (datetime.now()+timedelta(days=3)).date()
+        nowtime = datetime.now()
+        nowdate = nowtime.date()
+        enddate = (nowtime + timedelta(days=3)).date()
         appoints = Appoint.objects.not_canceled().filter(
             Room_id=Rid
         ).order_by("Astart")
@@ -316,8 +317,11 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
         data = [appoint.toJson() for appoint in appoints if
                 appoint.Astart.date() >= nowdate and appoint.Astart.date() < enddate
                 ]
+        comingsoon = appoints.filter(Astart__gt=nowtime, 
+                                    Astart__lte=nowtime + timedelta(minutes=15))
+        comingsoon = 1 if len(comingsoon) else 0    # 有15分钟之内的未开始预约，不允许即时预约
 
-        return JsonResponse({'data': data}, status=200, json_dumps_params={'ensure_ascii': False})
+        return JsonResponse({'comingsoon':comingsoon, 'data': data}, status=200, json_dumps_params={'ensure_ascii': False})
     else:
         return JsonResponse(
             {'statusInfo': {
