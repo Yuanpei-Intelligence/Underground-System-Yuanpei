@@ -164,7 +164,7 @@ class Appoint(models.Model):
 
     def cancel(self):
         self.Astatus = Appoint.Status.CANCELED
-        self.students.clear()
+        # self.students.clear()
         self.save()
 
     class Meta:
