@@ -481,7 +481,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
 
     if len(room_appoint) != 0:  # 当前有预约
 
-        if len(room_appoint.filter(students__in=[student])) != 0:   # 不是自己的预约
+        if len(room_appoint.filter(students__in=[student])) == 0:   # 不是自己的预约
             cardcheckinfo_writer(student, room, False, False, f"刷卡拒绝：存在预约")
             return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
