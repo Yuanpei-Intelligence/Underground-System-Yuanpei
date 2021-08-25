@@ -25,7 +25,7 @@ import threading
 from YPUnderground import global_info, hash_identity_coder
 
 # utils对接工具
-from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer, check_temp_appoint
+from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer, check_temp_appoint, set_appoint_late
 import Appointment.utils.web_func as web_func
 
 # 定时任务注册
@@ -219,7 +219,7 @@ def cameracheck(request):   # 摄像头post的后端函数
                 camera_lock.acquire()
                 with transaction.atomic():
                     if now_time.minute != room_previous_check_time.minute or\
-                        content.Acheck_status == Appoint.Check_status.UNSAVED: 
+                            content.Acheck_status == Appoint.Check_status.UNSAVED:
                         # 说明是新的一分钟或者本分钟还没有记录
                         # 如果随机成功，记录新的检查结果
                         if rand < global_info.check_rate:
@@ -232,7 +232,7 @@ def cameracheck(request):   # 摄像头post的后端函数
                         else:
                             if content.Acheck_status == Appoint.Check_status.FAILED:
                                 # 如果本次检测合规，宽容时也算上一次通过（因为一分钟只检测两次）
-                                if temp_stu_num >= num_need:  
+                                if temp_stu_num >= num_need:
                                     content.Acamera_ok_num += 1
                             # 本分钟暂无记录
                             content.Acheck_status = Appoint.Check_status.UNSAVED
@@ -258,15 +258,23 @@ def cameracheck(request):   # 摄像头post的后端函数
         try:
             if now_time > content.Astart + timedelta(
                     minutes=15) and content.Astatus == Appoint.Status.APPOINTED:
-                # added by wxy: 违约原因:迟到
-                status, tempmessage = appoint_violate(
-                    content, Appoint.Reason.R_LATE)
+                status, tempmessage = set_appoint_late(
+                    content, Appoint.Reason.R_LATE)  # 该函数只是把appoint标记为迟到(填写reason)，并不发送微信提醒
                 if not status:
                     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-                                     "因迟到而违约,返回值出现异常: "+tempmessage, "func[cameracheck]", "Error")
+                                     "设置为迟到时的返回值异常 "+tempmessage, "func[cameracheck]", "Error")
         except Exception as e:
             operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-                             "在迟到违约过程中: "+tempmessage, "func[cameracheck]", "Error")
+                             "在迟到状态设置过程中: "+tempmessage, "func[cameracheck]", "Error")
+            # added by wxy: 违约原因:迟到
+            # status, tempmessage = appoint_violate(
+            #     content, Appoint.Reason.R_LATE)
+            # if not status:
+            #     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
+            #                      "因迟到而违约,返回值出现异常: "+tempmessage, "func[cameracheck]", "Error")
+        # except Exception as e:
+        #     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
+        #                      "在迟到违约过程中: "+tempmessage, "func[cameracheck]", "Error")
 
         return JsonResponse({}, status=200)  # 返回空就好
     else:  # 否则的话 相当于没有预约 正常返回
@@ -317,11 +325,11 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
         data = [appoint.toJson() for appoint in appoints if
                 appoint.Astart.date() >= nowdate and appoint.Astart.date() < enddate
                 ]
-        comingsoon = appoints.filter(Astart__gt=nowtime, 
-                                    Astart__lte=nowtime + timedelta(minutes=15))
+        comingsoon = appoints.filter(Astart__gt=nowtime,
+                                     Astart__lte=nowtime + timedelta(minutes=15))
         comingsoon = 1 if len(comingsoon) else 0    # 有15分钟之内的未开始预约，不允许即时预约
 
-        return JsonResponse({'comingsoon':comingsoon, 'data': data}, status=200, json_dumps_params={'ensure_ascii': False})
+        return JsonResponse({'comingsoon': comingsoon, 'data': data}, status=200, json_dumps_params={'ensure_ascii': False})
     else:
         return JsonResponse(
             {'statusInfo': {
@@ -459,7 +467,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             # 考虑到次晨的情况，判断一天内的时段
             now = timedelta(hours=now_time.hour, minutes=now_time.minute)
             start = timedelta(hours=room.Rstart.hour, minutes=room.Rstart.hour)
-            finish = timedelta(hours=room.Rfinish.hour, minutes=room.Rfinish.hour)
+            finish = timedelta(hours=room.Rfinish.hour,
+                               minutes=room.Rfinish.hour)
 
             if (now >= min(start, finish) and now <= max(start, finish)) ^ (start > finish):   # 在开放时间内
                 cardcheckinfo_writer(student, room, True, True, f"刷卡开门：自习室")
