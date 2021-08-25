@@ -25,7 +25,7 @@ import threading
 from YPUnderground import global_info, hash_identity_coder
 
 # utils对接工具
-from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer, check_temp_appoint, set_appoint_late
+from Appointment.utils.utils import send_wechat_message, appoint_violate, doortoroom, iptoroom, operation_writer, write_before_delete, cardcheckinfo_writer, check_temp_appoint, set_appoint_reason
 import Appointment.utils.web_func as web_func
 
 # 定时任务注册
@@ -258,7 +258,7 @@ def cameracheck(request):   # 摄像头post的后端函数
         try:
             if now_time > content.Astart + timedelta(
                     minutes=15) and content.Astatus == Appoint.Status.APPOINTED:
-                status, tempmessage = set_appoint_late(
+                status, tempmessage = set_appoint_reason(
                     content, Appoint.Reason.R_LATE)  # 该函数只是把appoint标记为迟到(填写reason)，并不发送微信提醒
                 if not status:
                     operation_writer(global_info.system_log, "预约"+str(content.Aid) +

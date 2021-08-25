@@ -278,7 +278,7 @@ lock = threading.RLock()
 real_credit_point = True  # 如果为false 那么不把扣除信用分纳入范畴
 
 
-def set_appoint_late(input_appoint, reason):    # 预约的过程中检查迟到，先记录原因，不一定扣分
+def set_appoint_reason(input_appoint, reason):    # 预约的过程中检查迟到，先记录原因，不一定扣分
     try:
         operation_succeed = False
         appoints = Appoint.objects.select_for_update().filter(Aid=input_appoint.Aid)
@@ -296,10 +296,10 @@ def set_appoint_late(input_appoint, reason):    # 预约的过程中检查迟到
         if operation_succeed:
             str_pid = str(os.getpid())
             operation_writer(major_sid, "预约" + str(aid) + "出现违约:" +
-                                str(areason), "func[set_appoint_late]"+str_pid, "OK") 
+                                str(areason), "func[set_appoint_reason]"+str_pid, "OK") 
         return True, ""
     except Exception as e:
-        return False, "in func[set_appoint_late]: " + str(e)
+        return False, "in func[set_appoint_reason]: " + str(e)
 
 def appoint_violate(input_appoint, reason):  # 将一个aid设为违约 并根据real_credit_point设置
     try:
