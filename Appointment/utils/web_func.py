@@ -58,12 +58,14 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
     min31 = timedelta(minutes=31)
     if appoint.Room.Rid == 'B214':                  # 暂时因无法识别躺姿导致的合格率下降
         original_qualified_rate -= 0.15             # 建议在0.1-0.2之间 前者最严 后者最宽松
+    if appoint.Room.Rid == 'B217' and appoint.Astart.hour >= 20 :   # 电影关灯导致识别不准确
+        original_qualified_rate -= 0.05             # 建议在0-0.1之间 因为主要是识别出的人数问题
     if appoint.Afinish - appoint.Astart < min31:    # 减少时间过短时前后未准时到的影响
-        original_qualified_rate -= 0.05             # 建议在0-0.1间 暂未打算投入使用
-    if appoint.Atemp_flag == 1:                 # 对于临时预约，不检查摄像头 by lhw（2021.7.13）
+        original_qualified_rate -= 0.01             # 建议在0-0.1之间 基本取消了
+    if appoint.Areason == Appoint.Reason.R_LATE:    # 迟到需要额外保证使用率
+        original_qualified_rate += 0.05             # 建议在0.2-0.4之间 极端可考虑0.5 目前仅测试
+    if appoint.Atemp_flag == 1:                     # 对于临时预约，不检查摄像头 by lhw（2021.7.13）
         original_qualified_rate = 0             
-    # if appoint.Areason == Appoint.Reason.R_LATE:    # 给未刷卡提供直接通过的机会
-    #     original_qualified_rate += 0.25             # 建议在0.2-0.4之间 极端可考虑0.5 暂不使用
     return original_qualified_rate
 
 
@@ -118,19 +120,20 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
                 appoint=appoint
             )
             
-            # add by lhw ： 迟到的预约通知在这里处理。如果迟到不扣分，删掉这个if的内容即可，让下面那个camera check的if判断是否违规。
-            if appoint.Areason == Appoint.Reason.R_LATE:
-                status, tempmessage = utils.appoint_violate(
-                    appoint, Appoint.Reason.R_LATE)
-                if not status:
-                    utils.operation_writer(
-                        global_info.system_log, f"预约{str(Aid)}因迟到而违约时出现异常: {tempmessage}", "func[web_func:finishAppoint]", "Error")
-            elif appoint.Acamera_ok_num < appoint.Acamera_check_num * adjusted_camera_qualified_check_rate - 0.01:  # 人数不足
-                status, tempmessage = utils.appoint_violate(
-                    appoint, Appoint.Reason.R_TOOLITTLE)
-                if not status:
-                    utils.operation_writer(
-                        global_info.system_log, f"预约{str(Aid)}因人数不够而违约时出现异常: {tempmessage}", "func[web_func:finishAppoint]", "Error")
+            if appoint.Acamera_ok_num < appoint.Acamera_check_num * adjusted_camera_qualified_check_rate - 0.01:  # 人数不足
+                # add by lhw ： 迟到的预约通知在这里处理。如果迟到不扣分，删掉这个if的内容即可，让下面那个camera check的if判断是否违规。
+                if appoint.Areason == Appoint.Reason.R_LATE:
+                    status, tempmessage = utils.appoint_violate(
+                        appoint, Appoint.Reason.R_LATE)
+                    if not status:
+                        utils.operation_writer(
+                            global_info.system_log, f"预约{str(Aid)}因迟到而违约时出现异常: {tempmessage}", "func[web_func:finishAppoint]", "Error")
+                else:
+                    status, tempmessage = utils.appoint_violate(
+                        appoint, Appoint.Reason.R_TOOLITTLE)
+                    if not status:
+                        utils.operation_writer(
+                            global_info.system_log, f"预约{str(Aid)}因人数不够而违约时出现异常: {tempmessage}", "func[web_func:finishAppoint]", "Error")
 
             else:   # 通过
                 appoint.Astatus = Appoint.Status.CONFIRMED
