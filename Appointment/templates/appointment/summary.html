@@ -1,0 +1,911 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <title>我的地下室年度回忆</title>
+  <link type="image/x-icon" href="{% static 'assets/img/yp_favicon.png' %} " rel="icon">
+  <meta name="theme-color" content="#f00">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, minimal-ui">
+  <meta name="full-screen" content="yes">
+  <meta name="browsermode" content="application">
+  <meta name="x5-fullscreen" content="true">
+  <meta name="x5-page-mode" content="app">
+  <meta name="apple-mobile-web-app-title" content="我的网易云音乐2017">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no, email=no">
+  <link rel="stylesheet" href="{% static 'assets/css/jquery.fullpage.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/css/main.css' %}">
+</head>
+</head>
+
+<body>
+  <div id="app">
+
+
+
+
+
+    <section class="section page page-1 page-home">
+      <div class="bg-back"></div>
+      <div class="bg-white"></div>
+      <div class="title-wrapper">
+        <h1 class="title title-1"></h1>
+        <h1 class="title title-2"></h1>
+      </div>
+      <div class="nickname">Hi ，{{ Sname }}</div>
+      <a class="button">
+        <span>立即<br>查看</span>
+      </a>
+    </section>
+
+
+
+
+
+    <section class="section page page-2">
+      <div class="bg-back"></div>
+      <div class="content">
+        <p class="para">这一年里</p>
+        <p class="para mt-10">地下室预约系统一共发起过</p>
+        <p class="para mt-10"><span class="fs-18 fc-red">{{all_appoint_num}}</span>条预约(不含取消)</p>
+        <p class="para mt-35">总预约时长达到<span class="fs-18 fc-red">{{all_appoint_len}}</span>小时</p>
+        <p class="para mt-10">相当于<span class="fs-18 fc-red">{{all_appoint_len_day}}</span>个整天</p>
+      </div>
+    </section>
+
+
+
+
+
+    <section class="section page page-2">
+      <div class="bg-star"></div>
+      <div class="night night-1"></div>
+      <div class="night night-2"></div>
+      <div class="stars">
+        <span class="star star-1"></span>
+        <span class="star star-2"></span>
+        <span class="star star-3"></span>
+        <span class="star star-4"></span>
+      </div>
+      <div class="meteors">
+        <span class="meteor meteor-1"></span>
+        <span class="meteor meteor-2"></span>
+      </div>
+      <!-- <div class="moon-wrapper"></div> -->
+      <div class="moon">
+      </div>
+      <div class="building building-1"></div>
+      <div class="content">
+        {% if appoint_make_num %}
+        <p class="para">其中，你一共发起了<span class="fs-18 fc-red">{{appoint_make_num}}</span>条预约</p>
+        <!-- <p class="para mt-10">并参加了别人发起的<span class="fs-18 fc-red">3067</span>条预约</p> -->
+        <p class="para mt-10">相当于整个预约系统的<span class="fs-18 fc-red">{{appoint_make_num_pct}}%</span></p>
+        <p class="para mt-35">总预约时长为<span class="fs-18 fc-red">{{appoint_make_hour}}</span>小时</p>
+        <p class="para mt-10">相当于整个预约系统的<span class="fs-18 fc-red">{{appoint_make_hour_pct}}%</span></p>
+        {% else %}
+        <p class="para">其中，你一共参加了<span class="fs-18 fc-red">{{appoint_attend_num}}</span>条预约</p>
+        <!-- <p class="para mt-10">并参加了别人发起的<span class="fs-18 fc-red">3067</span>条预约</p> -->
+        <!-- <p class="para mt-10">相当于整个预约系统的<span class="fs-18 fc-red">{{appoint_make_num_pct}}%</span></p> -->
+        <p class="para mt-35">参加的预约总时长为<span class="fs-18 fc-red">{{appoint_attend_hour}}</span>小时</p>
+        <!-- <p class="para mt-10">相当于整个预约系统的<span class="fs-18 fc-red">{{appoint_make_hour_pct}}%</span></p> -->
+        {% endif %}
+      </div>
+    </section>
+
+
+
+
+
+
+    <section class="section page page-10">
+      <div class="bg-yellow"></div>
+      <!-- <div class="water"></div> -->
+      <!-- <div class="ripple">
+        <div class="bottle-wrapper">
+          <div class="bottle bottle-1">
+            <div class="man"></div>
+          </div>
+          <div class="bottle bottle-2"></div>
+        </div>
+      </div> -->
+      <!-- <div class="rain">
+        <div class="drop drop-1"></div>
+        <div class="drop drop-2"></div>
+        <div class="drop drop-3"></div>
+      </div> -->
+      <div class="content">
+        <p class="para">这一年</p>
+        <p class="para para-1"><span class="fc-red">{{hottest_room_1.0}} {{hottest_room_1.1}}</span></p>
+        <p class="para para-1">以<span class="fc-red">{{hottest_room_1.2}}</span>次的预约数</p>
+        <p class="para para-1">成为最抢手的功能房</p>
+        <p class="para para-1">而<span class="fc-red">{{hottest_room_2.0}} {{hottest_room_2.1}}</span>和<span
+            class="fc-red">{{hottest_room_3.0}} {{hottest_room_3.1}}</span></p>
+        <p class="para para-1">分别以<span class="fc-red">{{hottest_room_2.2}}次</span>和<span
+            class="fc-red">{{hottest_room_3.2}}次</span>的预约数</p>
+        <p class="para para-1">成为第二、第三热门的功能房</p>
+      </div>
+    </section>
+
+
+
+    {% if Sfav_room_id %}
+
+
+    <section class="section page page-8">
+      <div class="bg-back"></div>
+      <div class="rabbit">
+      </div>
+      <!-- <div class="bottom"></div> -->
+      <div class="building building-1">
+        <!-- <div class="roll"></div> -->
+        <!-- <div class="man"></div> -->
+      </div>
+      <div class="content">
+        <p class="para">在这一年里</p>
+        <p class="para para-1">你最喜欢使用的房间是<span class="fs-18 fc-red">{{Sfav_room_id}} {{Sfav_room_name}}</span></p>
+        <p class="para para-1">一共使用了<span class="fs-18 fc-red">{{Sfav_room_freq}}</span>次</p>
+        <p class="para para-1">不知道在这个房间里</p>
+        <p class="para para-1">有没有留下属于你的独家记忆</p>
+      </div>
+    </section>
+
+    {% endif %}
+
+
+    {% if appoint_make_num %}
+
+    <section class="section page page-5">
+      <div class="mountain mountain-1"></div>
+      <div class="mountain mountain-2"></div>
+      <div class="tree tree-1"></div>
+      <div class="tree tree-2"></div>
+      <div class="tree tree-3"></div>
+      <div class="tree tree-4"></div>
+      <div class="tree tree-5"></div>
+      <div class="tree tree-6"></div>
+      <div class="tree tree-7"></div>
+      <div class="tree tree-8"></div>
+      <!-- <div class="moon-wrapper">
+        <div class="moon">
+          <div class="man"></div>
+        </div>
+      </div> -->
+      <div class="content">
+        <p class="para">你最常在<span class="fc-red">{{Smake_time_most}}:00-{{Smake_time_most|add:1}}:00</span></p>
+        <p class="para para-1">发起预约</p>
+        <p class="para para-3">而在<span class="fc-red">{{Suse_time_most}}:00-{{Suse_time_most|add:1}}:00</span></p>
+        <p class="para para-1">使用房间最为频繁</p>
+        <p class="para para-3">在忙碌的同时</p>
+        <p class="para para-1">不要忘了好好休息</p>
+      </div>
+      <div id="main" style="position: relative;margin:0px auto; width: 95%;height:300px; bottom: -150px;"></div>
+      <script type="text/javascript" src="{% static 'assets/js/echarts.min.js' %}"></script>
+      <script type="text/javascript">
+        // 基于准备好的dom，初始化echarts实例
+        // 指定图表的配置项和数据
+        var chartDom = document.getElementById('main');
+        var myChart = echarts.init(chartDom);
+        var option;
+        var times_data = JSON.parse('{{Suse_time_list_js|safe}}');
+        var times_label = JSON.parse('{{Suse_time_list_label_js|safe}}')
+
+        option = {
+          xAxis: {
+            type: 'category',
+            data: times_label
+          },
+          yAxis: {
+            type: 'value',
+            name: '使用次数'
+          },
+          series: [{
+            data: times_data,
+            type: 'bar'
+          }]
+        };
+
+        option && myChart.setOption(option);
+      </script>
+    </section>
+
+    {% endif %}
+
+
+
+    {% if appoint_make_num %}
+
+    <section class="section page page-4">
+      <div class="bg-sand"></div>
+      <div class="wave1 wave1-1">
+        <div class="ripple"></div>
+      </div>
+      <div class="wave1 wave1-2"></div>
+      <!-- <div class="wave2 wave2-1"></div>
+      <div class="wave2 wave2-2"></div> -->
+      <div class="cat"></div>
+      <!-- <div class="man-wrapper">
+        <div class="splash"></div>
+        <div class="man"></div>
+      </div> -->
+      <div class="content">
+        <p class="para"><span class="fc-red">{{Sfirst_appoint.0}}</span>年<span
+            class="fc-red">{{Sfirst_appoint.1}}</span>月<span class="fc-red">{{Sfirst_appoint.2}}</span>日
+        </p>
+        <p class="para para-2">因为<span class="fc-red">{{Sfirst_appoint.3}}</span></p>
+        <p class="para para-2">你在<span class="fc-red">{{Sfirst_appoint.4}} {{Sfirst_appoint.5}}</span></p>
+        <p class="para para-2">发起了自己的第一条预约</p>
+        <p class="para para-2">与新地下室的初见</p>
+        <p class="para para-2">有没有带给你惊喜呢</p>
+      </div>
+    </section>
+
+    {% endif %}
+
+
+
+    {% if Skeywords_len %}
+
+    <section class="section page page-12">
+      <div class="info">
+        <div class="photo-wrapper">
+          <div class="photo">
+          </div>
+        </div>
+        <div class="content">
+          <div class="name f-thide">这些</div>
+          <p class="para">是你本学年的预约关键词</p>
+          <!-- <p class="para">共听了<span class="fs-18 fc-red">411</span>次</p> -->
+        </div>
+      </div>
+      <div class="waves">
+        <div class="wave wave-1"></div>
+        <div class="wave wave-2"></div>
+        <div class="wave wave-3"></div>
+        <div class="wave wave-4"></div>
+      </div>
+      <ul class="lines">
+        <li class="line line-1"><span class="text">{{Skeywords.0}}</span></li>
+        <li class="line line-2"><span class="text">{{Skeywords.1}}</span></li>
+        <li class="line line-3"><span class="text">{{Skeywords.2}}</span></li>
+        <li class="line line-4"><span class="text">{{Skeywords.3}}</span></li>
+        <li class="line line-5"><span class="text">{{Skeywords.4}}</span></li>
+        <li class="line line-6"><span class="text">{{Skeywords.5}}</span></li>
+        <li class="line line-7"><span class="text">{{Skeywords.6}}</span></li>
+        <li class="line line-8"><span class="text">{{Skeywords.7}}</span></li>
+        <li class="line line-9"><span class="text">{{Skeywords.8}}</span></li>
+        <li class="line line-10"><span class="text">{{Skeywords.9}}</span></li>
+      </ul>
+    </section>
+
+    {% endif %}
+
+
+    {% if Sfriend %}
+
+    <section class="section page page-6">
+      <div class="night night-1"></div>
+      <div class="night night-2"></div>
+      <div class="star star-1"></div>
+      <div class="star star-2"></div>
+      <div class="star star-3"></div>
+      <div class="star star-4"></div>
+      <div class="meteor meteor-1"></div>
+      <div class="meteor meteor-2"></div>
+      <div class="bottom-wrapper">
+        <div class="cooperation"></div>
+      </div>
+      <div class="content">
+        <p class="para">这一年</p>
+        <p class="para para-1">最常与你一起预约的小伙伴是</p>
+        <p class="para para-1"><span class="fc-red">{{Sfriend.0}} {{Sfriend.1}} {{Sfriend.2}}</span></p>
+        <p class="para para-4">化孤独为共同</p>
+        <p class="para para-1">我们践行着我们的初心</p>
+      </div>
+    </section>
+
+    {% endif %}
+
+
+
+    {% if aygj %}
+
+    <sectioin class="section page page-15">
+      <div class="ground">
+        <div class="clock-wrapper">
+          <div class="min"></div>
+          <div class="hour"></div>
+        </div>
+        <div class="crowd crowd-1"></div>
+        <div class="crowd crowd-2"></div>
+        <div class="crowd crowd-3"></div>
+        <div class="crowd crowd-4"></div>
+        <div class="crowd crowd-5"></div>
+        <div class="crowd cup"></div>
+      </div>
+      <div class="content">
+        <div class="content">
+          <p class="para para-1">你曾经在<span class="fs-18 fc-red">2:00-5:00</span>发起预约</p>
+          <p class="para-2 para">最晚的一次</p>
+          <p class="para-2 para">是在<span class="fs-18 fc-red">{{aygj.0}}</span>年<span
+              class="fs-18 fc-red">{{aygj.1}}</span>月<span class="fs-18 fc-red">{{aygj.2}}</span>日的<span
+              class="fs-18 fc-red">{{aygj.3}}</span></p>
+          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">熬夜冠军</span></p>
+          <p class="para-3 para">本年度仅有<span class="fs-18 fc-red">{{aygj_num}}</span>人获此殊荣</p>
+        </div>
+      </div>
+      <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
+    </sectioin>
+    {% endif %}
+
+
+    {% if zqgj %}
+
+    <sectioin class="section page page-15">
+      <div class="ground">
+        <div class="clock-wrapper">
+          <div class="min"></div>
+          <div class="hour"></div>
+        </div>
+        <div class="crowd crowd-1"></div>
+        <div class="crowd crowd-2"></div>
+        <div class="crowd crowd-3"></div>
+        <div class="crowd crowd-4"></div>
+        <div class="crowd crowd-5"></div>
+        <div class="crowd coffee"></div>
+      </div>
+      <div class="content">
+        <div class="content">
+          <p class="para para-1">你曾经在<span class="fs-18 fc-red">6:00-8:00</span>间进行预约</p>
+          <p class="para-2 para">最早的一次发生在<span class="fs-18 fc-red">{{zqgj.0}}</span>年<span
+              class="fs-18 fc-red">{{zqgj.1}}</span>月<span class="fs-18 fc-red">{{zqgj.2}}</span>日<span
+              class="fs-18 fc-red">{{zqgj.3}}</span></p>
+          <p class="para-2 para"><span class="fs-18 fc-red">{{zqgj.5}} {{zqgj.6}}</span>的<span
+              class="fs-18 fc-red">{{zqgj.4}}</span></p>
+          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">早起冠军</span></p>
+          <p class="para-3 para">本年度仅有<span class="fs-18 fc-red">{{zqgj_num}}</span>人获此殊荣</p>
+        </div>
+      </div>
+      <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
+    </sectioin>
+    {% endif %}
+
+
+
+    {% if wycm %}
+
+    <sectioin class="section page page-15">
+      <div class="ground">
+        <div class="clock-wrapper">
+          <div class="min"></div>
+          <div class="hour"></div>
+        </div>
+        <div class="crowd crowd-1"></div>
+        <div class="crowd crowd-2"></div>
+        <div class="crowd crowd-3"></div>
+        <div class="crowd crowd-4"></div>
+        <div class="crowd crowd-5"></div>
+        <div class="crowd birdclock"></div>
+      </div>
+      <div class="content">
+        <div class="content">
+          <p class="para para-1">在你发起的所有预约中</p>
+          <p class="para-2 para">有超过<span class="fs-18 fc-red">5</span>条预约</p>
+          <p class="para-2 para">是提前一周以上预约</p>
+          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">未雨绸缪</span></p>
+          <p class="para-4 para">本年度仅有<span class="fs-18 fc-red">{{wycm_num}}</span>人获此殊荣</p>
+        </div>
+      </div>
+      <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
+    </sectioin>
+    {% endif %}
+
+    {% if jxcz %}
+
+    <sectioin class="section page page-15">
+      <div class="ground">
+        <div class="clock-wrapper">
+          <div class="min"></div>
+          <div class="hour"></div>
+        </div>
+        <div class="crowd crowd-1"></div>
+        <div class="crowd crowd-2"></div>
+        <div class="crowd crowd-3"></div>
+        <div class="crowd crowd-4"></div>
+        <div class="crowd crowd-5"></div>
+        <div class="crowd lightning"></div>
+      </div>
+      <div class="content">
+        <div class="content">
+          <p class="para-2 para">你曾<span class="fs-18 fc-red">在开始时间前2分钟内</span>才进行预约</p>
+          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">极限操作</span></p>
+          <p class="para-3 para para-3">其中，<span class="fs-18 fc-red">{{jxcz.0}}</span>年<span
+              class="fs-18 fc-red">{{jxcz.1}}</span>月<span class="fs-18 fc-red">{{jxcz.2}}</span>日</p>
+          <p class="para-3 para para-3">你在<span class="fs-18 fc-red">{{jxcz.3}}</span>预约了<span
+              class="fs-18 fc-red">{{jxcz.4}}</span>的<span class="fs-18 fc-red">{{jxcz.5}} {{jxcz.6}}</span></p>
+          <p class="para-4 para">本年度仅有<span class="fs-18 fc-red">{{jxcz_num}}</span>人获此殊荣</p>
+        </div>
+      </div>
+      <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
+    </sectioin>
+    {% endif %}
+
+
+    {% if ypgw %}
+
+    <sectioin class="section page page-15">
+      <div class="ground">
+        <div class="clock-wrapper">
+          <div class="min"></div>
+          <div class="hour"></div>
+        </div>
+        <div class="crowd crowd-1"></div>
+        <div class="crowd crowd-2"></div>
+        <div class="crowd crowd-3"></div>
+        <div class="crowd crowd-4"></div>
+        <div class="crowd crowd-5"></div>
+        <div class="crowd gugugu"></div>
+      </div>
+      <div class="content">
+        <div class="content">
+          <p class="para para-1">本学年</p>
+          <p class="para-2 para">你因为<span class="fs-18 fc-red">迟到</span>而违规的次数达到<span
+              class="fs-18 fc-red">{{ypgw}}/span>次</p>
+          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">元培鸽王</span></p>
+          <p class="para-3 para">本年度仅有<span class="fs-18 fc-red">{{ypgw_num}}</span>人获此殊荣</p>
+          <p class="para-3 para">分享到朋友圈，寻找身边志同道合的鸽子</p>
+        </div>
+      </div>
+      <div class="tips">欸，有彩蛋吗？滑动看下~</div>
+    </sectioin>
+    {% endif %}
+
+
+
+
+
+
+
+
+
+
+    <section class="section page page-16">
+      <div class="bg-letter"></div>
+      <!-- <div class="arrow"></div> -->
+      <!-- <div class="slogan"> -->
+        <!-- <p class="text">↓ 点击开启 ↓</p>
+        <p class="text">(TODO:这页预告新功能)</p> -->
+        <div class="content">
+          <p class="para para-11-title" style="font-size: 25px;">邀 请 函</p>
+          <p class="para para-11-blank">&nbsp;</p>
+          <p class="para para-11">亲爱的{{Sname}}：</p>
+          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;你好！</p>
+          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2021年秋季，Yuanpei Profile（元培智慧校园系统）即将上线，除了原有的地下室预约服务升级，还有以下功能待你解锁：</p>
+
+          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元培门户：分享歌曲书目，展示精彩生活</p>
+          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;成长档案：记录个人信息，保留成长足迹</p>
+          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;订阅服务：自由订阅组织，个性通知提醒</p>
+          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;事务平台：组织人事管理，活动审批报销</p>
+          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通知信箱：通知个人事务，一键轻松处理</p>
+          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元气积分：元气反馈意愿，积分兑换奖励</p>
+
+          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;详情请关注后续推文，也欢迎你在以后的使用中自己不断探索体验。</p>
+          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yuanpei Profile——共同生活的线上家园，期待你的入住！</p>
+          <p class="para para-11-blank">&nbsp;</p>
+          <p class="para para-11-end">智慧校园项目组</p>
+        </div>
+      <div class="video-wrapper">
+      </div>
+      <div class="buttons">
+        <a href="javascript:;" class="button">重温我的年度回忆</a>
+      </div>
+      <div class="content-annotation">
+        <p class="para" style="font-size: 8px; color: grey; line-height: 24px;">制作｜小鱼 pht</p>
+        <p class="para" style="font-size: 8px; color: grey; line-height: 0px;">文案｜小鱼 zcy lzq</p>
+        <p class="para" style="font-size: 8px; color: grey; line-height: 24px;">感谢JohnieXu在Github的开源项目</p>
+
+      </div>
+    </section>
+
+
+
+
+    <!-- <section class="section page page-3">
+      <div>
+        <h3 class="title">2017，TA在网易云音乐听到最多的歌词是</h3>
+        <div class="rock rock-2">
+          <div class="rock-inner"></div>
+        </div>
+        <div class="rock rock-1">
+          <div class="rock-inner"></div>
+        </div>
+        <div class="rock rock-3">
+          <div class="rock-inner"></div>
+        </div>
+        <div class="rock rock-4">
+          <div class="rock-inner"></div>
+        </div>
+        <div class="mountain-wrapper">
+          <div class="mountain">
+            <div class="word">
+              <div class="count">
+                <span class="number">1467次</span><span class="man"></span>
+              </div>
+            </div>
+            <div class="content">
+              <ul class="list">
+                <li class="list-item">
+                  <div class="lyric">我以为这就是我所追求的<span class="fc-red">世界</span></div>
+                  <div class="arightist">—胡彦斌Tiger Hu《天黑黑》</div>
+                </li>
+                <li class="list-item">
+                  <div class="lyric">我以为这就是我所追求的<span class="fc-red">世界</span></div>
+                  <div class="arightist">—胡彦斌Tiger Hu《天黑黑》</div>
+                </li>
+                <li class="list-item">
+                  <div class="lyric">我以为这就是我所追求的<span class="fc-red">世界</span></div>
+                  <div class="arightist">—胡彦斌Tiger Hu《天黑黑》</div>
+                </li>
+                <li class="list-item">
+                  <div class="lyric">我以为这就是我所追求的<span class="fc-red">世界</span></div>
+                  <div class="arightist">—胡彦斌Tiger Hu《天黑黑》</div>
+                </li>
+                <li class="list-item">
+                  <div class="lyric">我以为这就是我所追求的<span class="fc-red">世界</span></div>
+                  <div class="arightist">—胡彦斌Tiger Hu《天黑黑》</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section> -->
+
+
+
+
+
+
+
+
+
+
+    <!-- <section class="section page page-7">
+      <div class="mountain mountain-1"></div>
+      <div class="mountain mountain-2">
+        <div class="man"></div>
+      </div>
+      <div class="mountain mountain-3"></div>
+      <div class="mountain mountain-4"></div>
+      <div class="mountain mountain-5"></div>
+      <div class="mountain mountain-6"></div>
+      <div class="mountain mountain-7"></div>
+      <div class="light-wrapper">
+        <div class="light light-1"></div>
+        <div class="light light-2"></div>
+        <div class="sun"></div>
+      </div>
+      <div class="content">
+        <p class="para">在TA的音乐品味中</p>
+        <p class="para para-15">也藏着高冷的一面</p>
+        <p class="para para-15">这首有些小众的<span class="fc-red">《Honey, Honey》</span></p>
+        <p class="para para-15">在今年TA一共听了<span class="fs-18 fc-red">20</span>次</p>
+      </div>
+    </section> -->
+
+
+
+
+
+    <!-- <section class="section page page-9">
+      <div class="bottom"></div>
+      <div class="calendar-wrapper">
+        <div class="calendar"></div>
+        <div class="man"></div>
+      </div>
+      <div class="leaves-wrapper"></div>
+      <div class="content">
+        <p class="para">这首<span class="fc-red">《The End of the World》</span></p>
+        <p class="para para-1">是TA今年听过年代最久远的歌</p>
+        <p class="para para-1">发行于<span class="fs-18 fc-red">1963</span>年<span class="fs-18 fc-red">2</span>月</p>
+      </div>
+    </section> -->
+
+
+
+
+
+
+    <!-- <section class="section page page-11">
+      <div class="bottom"></div>
+      <div class="orb"></div>
+      <div class="planet-wrapper">
+        <div class="sun sun-1"></div>
+        <svg class="spin" viewBox="-20 -20 670 320">
+          <g id="PlanetALL" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+            <g id="planetPage" transform="translate(-121.000000, -821.000000)">
+              <g id="planetGroup" transform="translate(106.000000, 787.000000)">
+                <path id="bigPath"
+                  d="M341.77773,207.923971 C511.478165,159.263154 641.40229,93.1535859 631.971387,60.2641167 C622.540483,27.3746476 477.325842,40.1598508 307.625407,88.8206674 C137.924973,137.481484 8.00084696,203.591053 17.4317505,236.480522 C26.862654,269.369991 172.077295,256.584788 341.77773,207.923971 Z"
+                  stroke="#000000" stroke-width="2"></path>
+                <circle id="big3" fill="#A31B01" cx="0" cy="0" r="14">
+                  <animateMotion begin="0s" dur="15s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#bigPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <circle id="big2" fill="#A31B01" cx="0" cy="0" r="17.5">
+                  <animateMotion begin="0s" dur="15s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#bigPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <circle id="big1" fill="#A31B01" cx="0" cy="0" r="9">
+                  <animateMotion begin="-11s" dur="15s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#bigPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <path id="smallPath"
+                  d="M366.553285,177.547385 C491.139407,141.822889 586.568404,93.4445038 579.699915,69.4912365 C572.831426,45.5379693 466.266409,55.0804353 341.680286,90.804931 C217.094164,126.529427 121.665167,174.907812 128.533656,198.86108 C135.402145,222.814347 241.967163,213.271881 366.553285,177.547385 Z"
+                  stroke="#000000" stroke-width="2"></path>
+                <circle id="small1" fill="#A31B01" cx="0" cy="0" r="11.5">
+                  <animateMotion begin="0s" dur="10s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#smallPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <circle id="small2" fill="#A31B01" cx="0" cy="0" r="12.5">
+                  <animateMotion begin="-3.3s" dur="10s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#smallPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <circle id="small3" fill="#A31B01" cx="0" cy="0" r="7">
+                  <animateMotion begin="-6.6s" dur="10s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#smallPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <circle id="small4" fill="#A31B01" cx="0" cy="0" r="7">
+                  <animateMotion begin="-4s" dur="10s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#smallPath"></mpath>
+                  </animateMotion>
+                </circle>
+                <circle id="small5" fill="#A31B01" cx="0" cy="0" r="4">
+                  <animateMotion begin="-0.7s" dur="10s" rotate="auto" repeatCount="indefinite">
+                    <mpath xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#smallPath"></mpath>
+                  </animateMotion>
+                </circle>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <div class="sun sun-2"></div>
+      </div>
+      <div class="content">
+        <p class="para">这一年，在TA收藏的歌</p>
+        <p class="para para-1">有<span class="fs-18 fc-red">94</span>首是网易云音乐精心为TA推荐的</p>
+        <p class="para para-1">2017，还是网易云音乐最懂TA。</p>
+      </div>
+    </section> -->
+
+
+
+
+
+    <!-- <section class="section page page-13">
+      <div class="bottom"></div>
+      <div class="glass glass-1">
+        <div class="s">
+          <div class="c"></div>
+        </div>
+      </div>
+      <div class="glass glass-2">
+        <div class="s">
+          <div class="c"></div>
+        </div>
+      </div>
+      <div class="glass glass-3">
+        <div class="sand sand-1"></div>
+        <div class="sand sand-2"></div>
+        <div class="sand sand-3"></div>
+        <div class="man"></div>
+      </div>
+      <div class="line"></div>
+      <div class="content">
+        <p class="para">这一年</p>
+        <p class="para para-15">TA有<span class="fs-18 fc-red">493小时</span></p>
+        <p class="para para-15">沉浸在音乐的世界</p>
+        <p class="para para-15">时光中的音乐</p>
+        <p class="para para-15">是不散的宴席</p>
+      </div>
+    </section> -->
+
+
+
+
+
+    <!-- <section class="section page page-14">
+      <div class="light light-1"></div>
+      <div class="light light-2"></div>
+      <div class="info">
+        <div class="avatar">
+          <img class="image" src="http://p1.music.126.net/dVzgKX1ZoHaGGL41WN2Jjw==/18630125023093130.jpg?param=110y110"
+            aleft="avatar">
+        </div>
+        <div class="title"></div>
+      </div>
+      <div class="content">
+        <ol>
+          <li class="item clearfix">
+            <div class="left">
+              <span class="num s-fcRed">1</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">Liability</span></div>
+              </div>
+            </div>
+            <div class="right">Lorde</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left">
+              <span class="num s-fcRed">2</span>
+              <div class="f-oh">
+                <div class="tt">
+                  <span class="in">我喜欢上你时的内心活动</span>
+                </div>
+              </div>
+            </div>
+            <div class="right">陈绮贞</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num s-fcRed">3</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">修炼爱情</span></div>
+              </div>
+            </div>
+            <div class="right">徐佳莹</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">4</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">积木</span></div>
+              </div>
+            </div>
+            <div class="right">陈奕迅</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">5</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">山丘 （Cover 李宗盛）</span></div>
+              </div>
+            </div>
+            <div class="right">金玟岐</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">6</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">你就不要想起我（Cover 田馥甄）</span></div>
+              </div>
+            </div>
+            <div class="right">杨亚茹Triste</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">7</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">I Don't Mind If You Don't Mind</span></div>
+              </div>
+            </div>
+            <div class="right">Ron Pope</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">8</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">百年孤寂</span></div>
+              </div>
+            </div>
+            <div class="right">王菲</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">9</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">黑色幽默</span></div>
+              </div>
+            </div>
+            <div class="right">周杰伦</div>
+          </li>
+          <li class="item clearfix">
+            <div class="left"><span class="num">10</span>
+              <div class="f-oh">
+                <div class="tt"><span class="in">我敢在你怀里孤独</span></div>
+              </div>
+            </div>
+            <div class="right">刘若英</div>
+          </li>
+        </ol>
+      </div>
+      <div class="man"></div>
+    </section> -->
+
+
+
+
+
+    <!-- <sectioin class="section page page-15">
+      <div class="ground">
+        <div class="clock-wrapper">
+          <div class="min"></div>
+          <div class="hour"></div>
+        </div>
+        <div class="crowd crowd-1"></div>
+        <div class="crowd crowd-2"></div>
+        <div class="crowd crowd-3"></div>
+        <div class="crowd crowd-4"></div>
+        <div class="crowd crowd-5"></div>
+        <div class="man"></div>
+      </div>
+      <div class="content">
+        <div class="content">
+          <p class="para para-1">2017年11月15日</p>
+          <p class="para-2 para">网易云音乐收获了<span class="fs-18 fc-red">4亿</span>用户</p>
+          <p class="para-3 para para-3">今后的时光</p>
+          <p class="para-4 para">让网易云音乐陪伴你一同走过</p>
+        </div>
+      </div>
+      <div class="tips">欸，有彩蛋吗？滑动看下~</div>
+    </sectioin> -->
+
+  </div>
+  <!-- lib -->
+  <script src="{% static 'assets/js/jquery.min.js' %}"></script>
+  <!-- <script src="https://unpkg.com/jplayer@2.9.2/dist/jplayer/jquery.jplayer.min.js"></script> -->
+  <script src="{% static 'assets/js/jquery.fullpage.js' %}"></script>
+  <!-- components -->
+  <script src="{% static './assets/js/App.js' %}"></script>
+  <!-- main -->
+  <script lang="javascript">
+    jQuery(document).ready(function ($) {
+      var app = new App();
+      var ajaxData = {
+      }
+      var page1Css = {
+        background: 'red'
+      }
+      var bg = {
+        // bgLight: 'http://s3.music.126.net/nact/s/client/images/year2017/cover/cover_bg.jpg?91115a3fd39e5158b3387c3eec828793',
+        // bgBack: 'http://s3.music.126.net/nact/s/client/images/year2017/cover/light.png?282c69970cb1ace98b08e594888bcc5e',
+        // bgBack: '../img/cover.png'
+      }
+
+      $('#app').fullpage({
+        onLeave: function (index, nextIndex, direction) {
+          if (index == 1) {
+            rst = window.confirm('点击确认则视为允许我们访问你的必要数据，但是我们保证不会将其泄露给其他人')
+            if (!rst) {
+              return false
+            }
+          }
+          console.log(index + ' leave direction: ' + direction);
+        },
+        afterLoad: function (anchorLink, index) {
+          console.log(index + ' loaded');
+        },
+        sectionColor: ['yellow', 'green', 'blue', 'purple'],
+        fadingEffect: true
+      });
+      /*前往正文页面=>立即查看*/
+      $('#app .page-1 .button').click(function () {
+        $.fn.fullpage.moveSectionDown();
+      });
+      /*回顶部=>重温TA的2017*/
+      $('#app .page-16 .buttons .button').click(function () {
+        $.fn.fullpage.moveTo(1, 0);
+        // console.log('aaa');
+      });
+      /*测试*/
+      // $.fn.fullpage.moveTo(16, 0);
+    });
+
+  </script>
+</body>
+
+</html>
