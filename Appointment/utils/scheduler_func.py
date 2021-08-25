@@ -92,7 +92,8 @@ def cancelFunction(request):  # 取消预约
             reverse("Appointment:admin_index") + "?warn_code=" +
             str(warn_code) + "&warning=" + warning)
 
-    if appoint.Astart < datetime.now() + timedelta(minutes=30):
+    RESTRICT_CANCEL_TIME = False
+    if RESTRICT_CANCEL_TIME and appoint.Astart < datetime.now() + timedelta(minutes=30):
         warn_code = 1
         warning = "不能取消开始时间在30分钟之内的预约!"
         return redirect(

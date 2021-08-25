@@ -259,7 +259,8 @@ def cameracheck(request):   # 摄像头post的后端函数
             if now_time > content.Astart + timedelta(
                     minutes=15) and content.Astatus == Appoint.Status.APPOINTED:
                 status, tempmessage = set_appoint_reason(
-                    content, Appoint.Reason.R_LATE)  # 该函数只是把appoint标记为迟到(填写reason)，并不发送微信提醒
+                    content, Appoint.Reason.R_LATE)
+                    # 该函数只是把appoint标记为迟到(填写reason)并修改状态为进行中，不发送微信提醒
                 if not status:
                     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
                                      "设置为迟到时的返回值异常 "+tempmessage, "func[cameracheck]", "Error")

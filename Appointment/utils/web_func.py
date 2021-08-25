@@ -69,7 +69,7 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
 
 def startAppoint(Aid):  # 开始预约时的定时程序
     try:
-        appoint = Appoint.object.get(Aid=Aid)
+        appoint = Appoint.objects.get(Aid=Aid)
     except:
         utils.operation_writer(
             global_info.system_log, f"预约{str(Aid)}意外消失", "func[web_func:startAppoint]", "Error")
@@ -87,7 +87,7 @@ def startAppoint(Aid):  # 开始预约时的定时程序
 
 def finishAppoint(Aid):  # 结束预约时的定时程序
     try:
-        appoint = Appoint.object.get(Aid=Aid)
+        appoint = Appoint.objects.get(Aid=Aid)
     except:
         utils.operation_writer(
             global_info.system_log, f"预约{str(Aid)}意外消失", "func[web_func:finishAppoint]", "Error")
