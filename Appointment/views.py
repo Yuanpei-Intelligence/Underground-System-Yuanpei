@@ -1046,3 +1046,142 @@ def logout(request):    # 登出系统
         # return redirect(reverse("Appointment:index"))
     else:
         return redirect(reverse("Appointment:index"))
+
+
+
+# tag searchindex
+@csrf_exempt
+def summary(request):  # 主页
+    Sid = request.session['Sid']
+
+    with open(f'Appointment/summary_info/{Sid}.txt','r',encoding='utf-8') as fp:
+        myinfo = json.load(fp)
+
+    Rid_list = {
+        'B104': '无键盘自习室',
+        'B106': '自习室',
+        'B107A': '研讨室',
+        'B107B': '研讨室',
+        'B108': '自习室',
+        'B109A': '康德报告厅',
+        'B111': '研讨/书法室',
+        'B112': '自习室',
+        'B114': '自习室',
+        'B118': '自习室',
+        'B119': '研讨室',
+        'B205': '研讨/航模室',
+        'B206': '研讨/绘画室',
+        'B207': '演出区',
+        'B208': '台球室',
+        'B209': '研讨室',
+        'B214': '活动/舞蹈室',
+        'B215': '研讨室',
+        'B216': '健身室',
+        'B217': '活动/电影室',
+        'B218': '乒乓球房',
+        'B220': '音乐室',
+        'B221': '音乐室',
+        'B222': '力量室',
+        'R301': '元创空间',
+        'R302': '元创空间',
+        'R303': '元创空间',
+        'R304': '元创空间',
+        'R305': '元创空间'
+        }
+
+    # page 0
+    Sname = myinfo['Sname']
+
+    # page 1
+    all_appoint_num = 12034
+    all_appoint_len = 18473.17
+    all_appoint_len_day = int(all_appoint_len/24)
+
+    # page 2
+    appoint_make_num = myinfo['appoint_make_num']
+    appoint_make_num_pct = round(appoint_make_num/all_appoint_num, 4)
+    appoint_make_hour = myinfo['appoint_make_hour']
+    appoint_make_hour_pct = round(appoint_make_hour/all_appoint_len, 4)
+    appoint_attend_num = myinfo['appoint_attend_num']
+    appoint_attend_hour = myinfo['appoint_attend_hour']
+
+    # page 3
+    hottest_room_1 = ['B214', Rid_list['B214'], 1843]
+    hottest_room_2 = ['B220', Rid_list['B220'], 1630]
+    hottest_room_3 = ['B221', Rid_list['B221'], 1542]
+
+    # page 4
+    Sfav_room_id = myinfo['favourite_room_id']
+    if Sfav_room_id:
+        Sfav_room_name = Rid_list[Sfav_room_id]
+        Sfav_room_freq = int(myinfo['favourite_room_freq'])
+
+    # page 5
+    Smake_time_most = myinfo['make_time_most']
+    if Smake_time_most:
+        Smake_time_most = int(Smake_time_most)
+
+    Suse_time_list = myinfo['use_time_list'].split(';')
+    Suse_time_list = list(map(lambda x: int(x), Suse_time_list))
+    Suse_time_most = Suse_time_list.index(max(Suse_time_list))
+    Suse_time_list_js = json.dumps(Suse_time_list[6:])
+    Suse_time_list_label = [str(i) for i in range(6, 24)]
+    Suse_time_list_label_js = json.dumps(Suse_time_list_label)
+
+    # page 6
+    Sfirst_appoint = myinfo['first_appoint']
+    if Sfirst_appoint:
+        Sfirst_appoint = Sfirst_appoint.split('|')
+        Sfirst_appoint.append(Rid_list[Sfirst_appoint[4]])
+
+    # page 7
+    Skeywords = myinfo['usage']
+    if Skeywords:
+        Skeywords = Skeywords.split('|')
+        Skeywords_for_len = Skeywords.copy()
+        if '' in Skeywords_for_len:
+            Skeywords_for_len.remove('')
+        Skeywords_len = len(Skeywords_for_len)
+    else:
+        Skeywords_len = 0
+
+    # page 8
+    Sfriend = myinfo['friend']
+    if Sfriend == '':
+        Sfriend = None
+    if Sfriend:
+        Sfriend = Sfriend.split(';')
+
+    # page 9 熬夜冠军
+    aygj = myinfo['aygj']
+    if aygj:
+        aygj = aygj.split('|')
+        aygj_num = 78
+
+    # page 10 早起冠军
+    zqgj = myinfo['zqgj']
+    if zqgj:
+        zqgj = zqgj.split('|')
+        # print(zqgj)
+        zqgj.insert(6, Rid_list[zqgj[5]])
+        zqgj_num = 107
+    
+    # page 11 未雨绸缪
+    wycm = myinfo['wycm']
+    wycm_num = 44
+    
+    # page 12 极限操作
+    jxcz = myinfo['jxcz']
+    if jxcz:
+        jxcz = jxcz.split('|')
+        jxcz.insert(6, Rid_list[jxcz[5]])
+        jxcz_num = 100
+
+    # page 13 元培鸽王
+    ypgw = myinfo['ypgw']
+    ypgw_num = 22
+    
+    # page 14 新功能预告
+
+
+    return render(request, 'Appointment/summary.html', locals())
