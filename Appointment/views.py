@@ -1052,9 +1052,8 @@ def logout(request):    # 登出系统
 # tag searchindex
 @csrf_exempt
 def summary(request):  # 主页
-    Sid = request.session['Sid']
-
     try:
+        Sid = request.session['Sid']
         with open(f'Appointment/summary_info/{Sid}.txt','r',encoding='utf-8') as fp:
             myinfo = json.load(fp)
     except:
