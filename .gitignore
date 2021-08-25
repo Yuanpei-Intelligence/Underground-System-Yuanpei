@@ -139,7 +139,4 @@ migrations/
 test_data/
 comment/
 avatar/
-
-# Network config
-static/
-web.config
+summary_info/

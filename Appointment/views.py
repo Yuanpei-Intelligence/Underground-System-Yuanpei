@@ -1055,7 +1055,7 @@ def summary(request):  # 主页
     Sid = request.session['Sid']
 
     try:
-        with open(f'static/summary_info/{Sid}.txt','r',encoding='utf-8') as fp:
+        with open(f'Appointment/summary_info/{Sid}.txt','r',encoding='utf-8') as fp:
             myinfo = json.load(fp)
     except:
         return redirect(reverse("Appointment:index"))
