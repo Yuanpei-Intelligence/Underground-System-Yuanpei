@@ -117,8 +117,15 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
                 original_qualified_rate=adjusted_camera_qualified_check_rate,
                 appoint=appoint
             )
-
-            if appoint.Acamera_ok_num < appoint.Acamera_check_num * adjusted_camera_qualified_check_rate - 0.01:  # 人数不足
+            
+            # add by lhw ： 迟到的预约通知在这里处理。如果迟到不扣分，删掉这个if的内容即可，让下面那个camera check的if判断是否违规。
+            if appoint.Areason == Appoint.Reason.R_LATE:
+                status, tempmessage = utils.appoint_violate(
+                    appoint, Appoint.Reason.R_LATE)
+                if not status:
+                    utils.operation_writer(
+                        global_info.system_log, f"预约{str(Aid)}因迟到而违约时出现异常: {tempmessage}", "func[web_func:finishAppoint]", "Error")
+            elif appoint.Acamera_ok_num < appoint.Acamera_check_num * adjusted_camera_qualified_check_rate - 0.01:  # 人数不足
                 status, tempmessage = utils.appoint_violate(
                     appoint, Appoint.Reason.R_TOOLITTLE)
                 if not status:
