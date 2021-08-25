@@ -35,7 +35,7 @@ def clear_appointments():
             Afinish__lte=datetime.now()-timedelta(days=7))
         try:
             # with transaction.atomic(): //不采取原子操作
-            write_before_delete(appoints_to_delete)  # 删除之前写在记录内
+            utils.write_before_delete(appoints_to_delete)  # 删除之前写在记录内
             appoints_to_delete.delete()
         except Exception as e:
             utils.operation_writer(global_info.system_log, "定时删除任务出现错误: "+str(e),
@@ -276,6 +276,7 @@ def addAppoint(contents):  # 添加预约, main function
 
 
     # 接下来开始搜索数据库，上锁
+    major_student = None    # 避免下面未声明出错
     try:
         with transaction.atomic():
 
@@ -347,11 +348,12 @@ def addAppoint(contents):  # 添加预约, main function
                 appoint.students.add(student)
             appoint.save()
 
-            # written by dyh: 在Astart将状态变为PROGRESSING
+            # written by dyh: 在Astart将状态变为PROCESSING
             scheduler.add_job(web_func.startAppoint,
                               args=[appoint.Aid],
                               id=f'{appoint.Aid}_start',
-                              next_run_time=Astart)
+                              next_run_time=Astart if appoint.Atemp_flag == False
+                                        else datetime.now() + timedelta(seconds=5))
 
             # write by cdf start2  # 添加定时任务：finish
             scheduler.add_job(web_func.finishAppoint,
