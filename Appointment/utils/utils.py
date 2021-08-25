@@ -278,7 +278,8 @@ lock = threading.RLock()
 real_credit_point = True  # 如果为false 那么不把扣除信用分纳入范畴
 
 
-def set_appoint_reason(input_appoint, reason):    # 预约的过程中检查迟到，先记录原因，不一定扣分
+def set_appoint_reason(input_appoint, reason):
+    '''预约的过程中检查迟到，先记录原因，并且进入到进行中状态，不一定扣分'''
     try:
         operation_succeed = False
         appoints = Appoint.objects.select_for_update().filter(Aid=input_appoint.Aid)
@@ -286,6 +287,8 @@ def set_appoint_reason(input_appoint, reason):    # 预约的过程中检查迟�
             if len(appoints) != 1:
                 raise AssertionError
             for appoint in appoints:
+                if appoint.Astatus == Appoint.Status.APPOINTED:
+                    appoint.Astatus = Appoint.Status.PROCESSING # 避免重复调用本函数
                 appoint.Areason = reason
                 appoint.save()
                 operation_succeed = True
