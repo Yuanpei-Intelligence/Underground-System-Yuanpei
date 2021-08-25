@@ -129,3 +129,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# PROJECT SPECIFIC #
+# IDE configs #
+.vscode/
+.idea/
+load_setting*.json
+migrations/
+test_data/
+comment/
+avatar/
+
+# Network config
+static/
+web.config
