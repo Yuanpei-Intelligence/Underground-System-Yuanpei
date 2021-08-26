@@ -1128,9 +1128,9 @@ def summary(request):  # 主页
 
     # page 2
     appoint_make_num = myinfo['appoint_make_num']
-    appoint_make_num_pct = round(appoint_make_num/all_appoint_num, 4)
+    appoint_make_num_pct = myinfo['rank_num']
     appoint_make_hour = myinfo['appoint_make_hour']
-    appoint_make_hour_pct = round(appoint_make_hour/all_appoint_len, 4)
+    appoint_make_hour_pct = myinfo['rank_hour']
     appoint_attend_num = myinfo['appoint_attend_num']
     appoint_attend_hour = myinfo['appoint_attend_hour']
 
