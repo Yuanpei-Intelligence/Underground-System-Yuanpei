@@ -1048,16 +1048,43 @@ def logout(request):    # 登出系统
         return redirect(reverse("Appointment:index"))
 
 
+########################################
+# for 年度总结
+########################################
 
-# tag searchindex
 @csrf_exempt
 def summary(request):  # 主页
+    if not identity_check(request):
+        try:
+            if request.method == "GET":
+                stu_id_ming = request.GET['Sid']
+                stu_id_code = request.GET['Secret']
+                timeStamp = request.GET['timeStamp']
+                request.session['Sid'] = stu_id_ming
+                request.session['Secret'] = stu_id_code
+                request.session['timeStamp'] = timeStamp
+                assert identity_check(request) is True
+
+            else:  # POST 说明是display的修改,但是没登陆,自动错误
+                raise SystemError
+        except:
+            return redirect(direct_to_login(request).replace(
+                reverse('Appointment:index'), reverse('Appointment:summary')))
+
+            # 至此获得了登录的授权 但是这个人可能不存在 加判断
+        try:
+            request.session['Sname'] = Student.objects.get(
+                Sid=request.session['Sid']).Sname
+            return redirect(reverse("Appointment:summary"))
+        except:
+            return redirect(reverse("Appointment:logout"))
+
     try:
         Sid = request.session['Sid']
         with open(f'Appointment/summary_info/{Sid}.txt','r',encoding='utf-8') as fp:
             myinfo = json.load(fp)
     except:
-        return redirect(reverse("Appointment:index"))
+        return redirect(reverse("Appointment:logout"))
 
     Rid_list = {
         'B104': '无键盘自习室',
