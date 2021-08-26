@@ -31,6 +31,9 @@
 
 
 
+
+
+
     <section class="section page page-1 page-home">
       <div class="bg-back"></div>
       <div class="bg-white"></div>
@@ -52,8 +55,8 @@
       <div class="bg-back"></div>
       <div class="content">
         <p class="para">这一年里</p>
-        <p class="para mt-10">地下室预约系统一共发起过</p>
-        <p class="para mt-10"><span class="fs-18 fc-red">{{all_appoint_num}}</span>条预约(不含取消)</p>
+        <p class="para mt-10">地下室预约系统一共发起了</p>
+        <p class="para mt-10"><span class="fs-18 fc-red">{{all_appoint_num}}</span>条预约</p>
         <p class="para mt-35">总预约时长达到<span class="fs-18 fc-red">{{all_appoint_len}}</span>小时</p>
         <p class="para mt-10">相当于<span class="fs-18 fc-red">{{all_appoint_len_day}}</span>个整天</p>
       </div>
@@ -85,9 +88,9 @@
         {% if appoint_make_num %}
         <p class="para">其中，你一共发起了<span class="fs-18 fc-red">{{appoint_make_num}}</span>条预约</p>
         <!-- <p class="para mt-10">并参加了别人发起的<span class="fs-18 fc-red">3067</span>条预约</p> -->
-        <p class="para mt-10">相当于整个预约系统的<span class="fs-18 fc-red">{{appoint_make_num_pct}}%</span></p>
+        <p class="para mt-10">在所有使用者中排前<span class="fs-18 fc-red">{{appoint_make_num_pct}}%</span></p>
         <p class="para mt-35">总预约时长为<span class="fs-18 fc-red">{{appoint_make_hour}}</span>小时</p>
-        <p class="para mt-10">相当于整个预约系统的<span class="fs-18 fc-red">{{appoint_make_hour_pct}}%</span></p>
+        <p class="para mt-10">在所有使用者中排前<span class="fs-18 fc-red">{{appoint_make_hour_pct}}%</span></p>
         {% else %}
         <p class="para">其中，你一共参加了<span class="fs-18 fc-red">{{appoint_attend_num}}</span>条预约</p>
         <!-- <p class="para mt-10">并参加了别人发起的<span class="fs-18 fc-red">3067</span>条预约</p> -->
@@ -335,13 +338,16 @@
           <p class="para-2 para">是在<span class="fs-18 fc-red">{{aygj.0}}</span>年<span
               class="fs-18 fc-red">{{aygj.1}}</span>月<span class="fs-18 fc-red">{{aygj.2}}</span>日的<span
               class="fs-18 fc-red">{{aygj.3}}</span></p>
-          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">熬夜冠军</span></p>
-          <p class="para-3 para">本年度仅有<span class="fs-18 fc-red">{{aygj_num}}</span>人获此殊荣</p>
+          <p class="para-2 para">解锁成就<span class="fs-18 fc-red">熬夜冠军</span></p>
+          <p class="para-2 para">本年度有<span class="fs-18 fc-red">{{aygj_num}}</span>人获此殊荣</p>
         </div>
       </div>
       <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
     </sectioin>
     {% endif %}
+
+    <!-- zqgj -->
+
 
 
     {% if zqgj %}
@@ -367,14 +373,13 @@
               class="fs-18 fc-red">{{zqgj.3}}</span></p>
           <p class="para-2 para"><span class="fs-18 fc-red">{{zqgj.5}} {{zqgj.6}}</span>的<span
               class="fs-18 fc-red">{{zqgj.4}}</span></p>
-          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">早起冠军</span></p>
-          <p class="para-3 para">本年度仅有<span class="fs-18 fc-red">{{zqgj_num}}</span>人获此殊荣</p>
+          <p class="para-2 para">解锁成就<span class="fs-18 fc-red">早起冠军</span></p>
+          <p class="para-2 para">有<span class="fs-18 fc-red">{{zqgj_num}}</span>人获此殊荣</p>
         </div>
       </div>
       <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
     </sectioin>
     {% endif %}
-
 
 
     {% if wycm %}
@@ -395,10 +400,9 @@
       <div class="content">
         <div class="content">
           <p class="para para-1">在你发起的所有预约中</p>
-          <p class="para-2 para">有超过<span class="fs-18 fc-red">5</span>条预约</p>
-          <p class="para-2 para">是提前一周以上预约</p>
-          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">未雨绸缪</span></p>
-          <p class="para-4 para">本年度仅有<span class="fs-18 fc-red">{{wycm_num}}</span>人获此殊荣</p>
+          <p class="para-2 para">有超过<span class="fs-18 fc-red">5</span>条提前一周以上预约</p>
+          <p class="para-2 para">解锁成就<span class="fs-18 fc-red">未雨绸缪</span></p>
+          <p class="para-2 para">本年度仅有<span class="fs-18 fc-red">{{wycm_num}}</span>人获此殊荣</p>
         </div>
       </div>
       <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
@@ -423,12 +427,12 @@
       <div class="content">
         <div class="content">
           <p class="para-2 para">你曾<span class="fs-18 fc-red">在开始时间前2分钟内</span>才进行预约</p>
-          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">极限操作</span></p>
-          <p class="para-3 para para-3">其中，<span class="fs-18 fc-red">{{jxcz.0}}</span>年<span
+          <p class="para-2 para">解锁成就<span class="fs-18 fc-red">极限操作</span></p>
+          <p class="para-2 para">其中，<span class="fs-18 fc-red">{{jxcz.0}}</span>年<span
               class="fs-18 fc-red">{{jxcz.1}}</span>月<span class="fs-18 fc-red">{{jxcz.2}}</span>日</p>
-          <p class="para-3 para para-3">你在<span class="fs-18 fc-red">{{jxcz.3}}</span>预约了<span
+          <p class="para-2 para">你在<span class="fs-18 fc-red">{{jxcz.3}}</span>预约了<span
               class="fs-18 fc-red">{{jxcz.4}}</span>的<span class="fs-18 fc-red">{{jxcz.5}} {{jxcz.6}}</span></p>
-          <p class="para-4 para">本年度仅有<span class="fs-18 fc-red">{{jxcz_num}}</span>人获此殊荣</p>
+          <p class="para-2 para">有<span class="fs-18 fc-red">{{jxcz_num}}</span>人获此殊荣</p>
         </div>
       </div>
       <!-- <div class="tips">欸，有彩蛋吗？滑动看下~</div> -->
@@ -456,9 +460,9 @@
           <p class="para para-1">本学年</p>
           <p class="para-2 para">你因为<span class="fs-18 fc-red">迟到</span>而违规的次数达到<span
               class="fs-18 fc-red">{{ypgw}}/span>次</p>
-          <p class="para-3 para para-3">解锁成就<span class="fs-18 fc-red">元培鸽王</span></p>
-          <p class="para-3 para">本年度仅有<span class="fs-18 fc-red">{{ypgw_num}}</span>人获此殊荣</p>
-          <p class="para-3 para">分享到朋友圈，寻找身边志同道合的鸽子</p>
+          <p class="para-2 para">解锁成就<span class="fs-18 fc-red">元培鸽王</span></p>
+          <p class="para-2 para">本年度仅有<span class="fs-18 fc-red">{{ypgw_num}}</span>人获此殊荣</p>
+          <p class="para-2 para">分享到朋友圈，寻找身边志同道合的鸽子</p>
         </div>
       </div>
       <div class="tips">欸，有彩蛋吗？滑动看下~</div>
@@ -470,49 +474,48 @@
 
 
 
-
-
-
-
     <section class="section page page-16">
       <div class="bg-letter"></div>
       <!-- <div class="arrow"></div> -->
       <!-- <div class="slogan"> -->
-        <!-- <p class="text">↓ 点击开启 ↓</p>
+      <!-- <p class="text">↓ 点击开启 ↓</p>
         <p class="text">(TODO:这页预告新功能)</p> -->
-        <div class="content">
-          <p class="para para-11-title" style="font-size: 25px;">邀 请 函</p>
-          <p class="para para-11-blank">&nbsp;</p>
-          <p class="para para-11">亲爱的{{Sname}}：</p>
-          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;你好！</p>
-          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2021年秋季，Yuanpei Profile（元培智慧校园系统）即将上线，除了原有的地下室预约服务升级，还有以下功能待你解锁：</p>
+      <div class="content">
+        <p class="para para-11-title" style="font-size: 22px;">邀 请 函</p>
+        <p class="para para-11-blank">&nbsp;</p>
+        <p class="para para-11">亲爱的{{Sname}}：</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;你好！</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2021年秋季，Yuanpei
+          Profile（元培智慧校园系统）即将上线，在这座“看不见的城市”里，你会解锁以下角落：</p>
 
-          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元培门户：分享歌曲书目，展示精彩生活</p>
-          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;成长档案：记录个人信息，保留成长足迹</p>
-          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;订阅服务：自由订阅组织，个性通知提醒</p>
-          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;事务平台：组织人事管理，活动审批报销</p>
-          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通知信箱：通知个人事务，一键轻松处理</p>
-          <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元气积分：元气反馈意愿，积分兑换奖励</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元培门户：生活展示窗口</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;成长档案：一串成长足迹</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;订阅服务：消息提醒助手</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;事务平台：事务一键解决</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通知信箱：你的事务管家</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元气积分：意愿点与动力</p>
 
-          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;详情请关注后续推文，也欢迎你在以后的使用中自己不断探索体验。</p>
-          <p class="para para-11"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yuanpei Profile——共同生活的线上家园，期待你的入住！</p>
-          <p class="para para-11-blank">&nbsp;</p>
-          <p class="para para-11-end">智慧校园项目组</p>
-        </div>
-      <div class="video-wrapper">
+        <p class="para para-11">
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在这里，你能够享受活动举办的全线上操作服务，代码替你奔跑，只需动动手指，你就能获知学院所有的活动消息。</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在这里，你可以有多种存在方式：安利音乐、设置个性签名、保存成长节点，你表达，故你在。</p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这里还会有许多有意思的故事，详情可关注后续推文，也欢迎你在以后的使用中自己不断探索体验。
+        </p>
+        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yuanpei Profile——共同生活的线上家园，期待并欢迎你的入住！</p>
+
+        <p class="para para-11-blank">&nbsp;</p>
+        <p class="para para-11-end">智慧校园项目组</p>
       </div>
+
       <div class="buttons">
         <a href="javascript:;" class="button">重温我的年度回忆</a>
       </div>
       <div class="content-annotation">
-        <p class="para" style="font-size: 8px; color: grey; line-height: 24px;">制作｜小鱼 pht</p>
-        <p class="para" style="font-size: 8px; color: grey; line-height: 0px;">文案｜小鱼 zcy lzq</p>
-        <p class="para" style="font-size: 8px; color: grey; line-height: 24px;">感谢JohnieXu在Github的开源项目</p>
+        <p class="para" style="font-size: 8px; color: grey; line-height: 10px;">制作｜wxy pht</p>
+        <p class="para" style="font-size: 8px; color: grey; line-height: 10px;">文案｜wxy zcy lzq</p>
+        <p class="para" style="font-size: 8px; color: grey; line-height: 10px;">感谢JohnieXu在Github的开源项目</p>
 
       </div>
     </section>
-
-
 
 
     <!-- <section class="section page page-3">
