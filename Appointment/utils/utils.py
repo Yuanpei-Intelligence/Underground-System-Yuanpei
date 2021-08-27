@@ -110,6 +110,8 @@ def doortoroom(door):
 
 # 给企业微信发送消息
 # update 0309:原来是返回状态码和错误信息，现在在这个函数中直接做错误处理，如果处理不了就写日志，不返回什么了
+# update 0812:返回体信息发生了改变，以后只有errCode是权威的了，这里向下兼容了以前的版本
+#             同时跳转链接也不再默认，需要手动提供，也进行了更新
 
 
 send_message = requests.session()
@@ -190,11 +192,27 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
         'toall': True,
         'content': message,
         'secret': secret,
-        'card': True
+        'card': True,
+        'url': 'https://underground.yuanpei.life/appointment/admin-index.html',
+        'btntxt': '预约详情',
     }
     response = send_message.post(
         global_info.wechat_url, data=json.dumps(post_data))
-    for _ in range(0, 3):  # 重发3次
+    # for _ in range(0, 3):  # 重发3次
+    for _ in range(0, 1):  # 不要重发，短时间重试没用，失败名单在内部重试--pht
+        if _:
+            time.sleep(1)   # 改成最后一次不休眠--pht
+        if response.status_code != 200:
+            # 正常连接永远返回200状态码
+            # 只有能正常连接的时候才解析json数据，否则可能报错--pht
+            operation_writer(global_info.system_log,
+                             starttime.strftime(
+                                 "%Y-%m-%d %H:%M:%S") + str(room)
+                             + message_type +
+                             f"向微信发消息失败，原因：状态码{response.status_code}异常",
+                             "func[send_wechat_message]",
+                             "Problem")
+            continue
         response = response.json()
         if response['status'] == 200:
             operation_writer(global_info.system_log,
@@ -206,31 +224,45 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
             return
         # else check the reason, send wechat message again
 
-        if response['data']['errMsg'] == '部分或全部发送失败':
+        # 现在errMsg不再靠谱，改用errCode判断--pht
+        code = response['data'].get('errCode')
+        has_code = code is not None
+        retry_enabled = (
+                (200 <= code and code < 400 or str(code)[0] == '2') if 
+                has_code else
+                ('部分' in response['data']['errMsg'])  # 部分或全部发送失败/部分发送失败
+            )
+
+        if retry_enabled:
+            if has_code and code != 206:
+                print('企业微信返回了异常的错误码：', code)
+                continue    # 目前仅206代表部分失败，可以重发，不应该出现200或其他
             stu_list = [i[0] for i in response['data']['detail']]
             post_data = {
                 'touser': stu_list,
                 'toall': True,
                 'content': message,
                 'secret': secret,
-                'card': True
+                'card': True,
+                'url': 'https://underground.yuanpei.life/appointment/admin-index.html',
+                'btntxt': '预约详情',
             }
             response = send_message.post(
-                '', data=json.dumps(post_data))
-        elif response['data']['errMsg'] == '缺少参数或参数不符合规范':
+                global_info.wechat_url, data=json.dumps(post_data)) # 这里为啥是''
+        else:
+            # 之前的判断冗余，返回值只需判断是否有重发价值，错误信息照搬errMsg即可
+            # 一般只可能是参数不规范(412)，企业微信出现问题会有应用不可见(404)
+            err_msg = response['data']['errMsg']
+            if has_code:
+                err_msg = f'{code} ' + err_msg
             operation_writer(global_info.system_log,
-                             starttime.strftime("%Y-%m-%d %H:%M:%S") + str(
-                                 room) + message_type + "向微信发消息失败，原因：缺少参数或参数不符合规范", "func[send_wechat_message]",
+                             starttime.strftime("%Y-%m-%d %H:%M:%S") + 
+                             str(room) + message_type + 
+                             f"向微信发消息失败，原因：{err_msg}",
+                             "func[send_wechat_message]",
                              "Problem")
             return
-        elif response['data']['errMsg'] == '应用不在发送范围内':
-            operation_writer(global_info.system_log,
-                             starttime.strftime("%Y-%m-%d %H:%M:%S") + str(
-                                 room) + message_type + "向微信发消息失败，原因：应用不在发送范围内", "func[send_wechat_message]",
-                             "Problem")
-            return
-        time.sleep(1)
-    # 重发3次都失败了
+    # 重发都失败了
     operation_writer(global_info.system_log,
                      starttime.strftime("%Y-%m-%d %H:%M:%S") + str(room) + message_type +
                      "向微信发消息失败，原因：多次发送失败. 发起者为: " +
@@ -245,6 +277,32 @@ lock = threading.RLock()
 # 信用分扣除体系
 real_credit_point = True  # 如果为false 那么不把扣除信用分纳入范畴
 
+
+def set_appoint_reason(input_appoint, reason):
+    '''预约的过程中检查迟到，先记录原因，并且进入到进行中状态，不一定扣分'''
+    try:
+        operation_succeed = False
+        appoints = Appoint.objects.select_for_update().filter(Aid=input_appoint.Aid)
+        with transaction.atomic():
+            if len(appoints) != 1:
+                raise AssertionError
+            for appoint in appoints:
+                if appoint.Astatus == Appoint.Status.APPOINTED:
+                    appoint.Astatus = Appoint.Status.PROCESSING # 避免重复调用本函数
+                appoint.Areason = reason
+                appoint.save()
+                operation_succeed = True
+                
+                major_sid = str(appoint.major_student.Sid)
+                aid = str(appoint.Aid)
+                areason = str(appoint.get_Areason_display())
+        if operation_succeed:
+            str_pid = str(os.getpid())
+            operation_writer(major_sid, "预约" + str(aid) + "出现违约:" +
+                                str(areason), "func[set_appoint_reason]"+str_pid, "OK") 
+        return True, ""
+    except Exception as e:
+        return False, "in func[set_appoint_reason]: " + str(e)
 
 def appoint_violate(input_appoint, reason):  # 将一个aid设为违约 并根据real_credit_point设置
     try:
