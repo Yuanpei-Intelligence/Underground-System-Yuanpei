@@ -39,15 +39,6 @@
 			});
 			
 		</script>
-
-		<style>
-			.square:before{
-				content: "";
-				display: block;
-				padding-top: 100%;
-			}
-		</style>
-
 	
 	</head>
 	<body>
@@ -154,7 +145,7 @@
 						<div class="tab-pane fade show active" id="available" role="tabpanel">
 							<div class="row justify-content-center overflow-auto" style="height: 25vh;">
 								{% for room, occupied, delta in room_info %}
-								<div class="col-md-2 col-sm-4 profile-widget m-2">
+								<div class="col-md-2 col-sm-5 col-10 profile-widget m-2">
 									<div class="pro-content">
 										<div class="row m-0">
 											<h2 class="title col-0 my-auto mr-1">{{ room.Rid }}</h2>
@@ -197,7 +188,7 @@
 						<div class="tab-pane fade show" id="statistics" role="tabpanel">
 							<div class="row justify-content-center overflow-auto" style="height: 25vh;">
 								{% for room, crowd in statistics_info %}
-								<div class="col-md-2 col-sm-4 profile-widget m-2">
+								<div class="col-md-2 col-sm-5 col-10 profile-widget m-2">
 									<div class="pro-content">
 										<div class="row m-0">
 											<h2 class="title col-0 my-auto mr-1">{{ room.Rid }}</h2>
@@ -216,7 +207,7 @@
 											</li>
 											<li class="row mx-0 mt-2">
 												<i class="col-0 mt-1 far fa fa-child"></i> 
-												<p class="col p-0 mr-0" style="margin-left: 1px;">{{ room.Rpresent }}&nbsp;/&nbsp;{{ room.Rmax }}</p>
+												<p class="col p-0 mr-0 mb-0" style="margin-left: 1px;">{{ room.Rpresent }}&nbsp;/&nbsp;{{ room.Rmax }}</p>
 											</li>
 										</ul>
 									</div>
