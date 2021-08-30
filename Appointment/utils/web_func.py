@@ -43,8 +43,12 @@ def img_get_func(request):
                 return img_path, True
 
     except:
+        utils.operation_writer(
+            global_info.system_log, f"从YPPF获取头像失败，原因需要查看代码", "func[web_func:img_get_func]", "Problem")
         return img_path, False
         # 接受失败，返回旧地址
+    utils.operation_writer(
+            global_info.system_log, f"从YPPF获取头像失败，未登录或未返回", "func[web_func:img_get_func]", "Problem")
     return img_path, False
 
 
