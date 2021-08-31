@@ -363,7 +363,7 @@ class AppointAdmin(admin.ModelAdmin):
                 finish = appoint.Afinish
                 if start > finish:
                     return self.message_user(request=request,
-                                            message=f'操作失败,{aid}预约开始和结束时间冲突!请勿篡改数据!',
+                                            message=f'操作失败,预约{aid}开始和结束时间冲突!请勿篡改数据!',
                                             level=messages.WARNING)
                 scheduler_func.cancel_scheduler(aid)    # 注销原有定时任务 无异常
                 scheduler_func.set_scheduler(appoint)   # 开始时进入进行中 结束后判定
