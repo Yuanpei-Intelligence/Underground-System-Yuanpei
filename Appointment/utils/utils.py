@@ -404,9 +404,9 @@ def operation_writer(user, message, source, status_code="OK"):
         with open(os.path.join(log_user_path, f"{str(user)}.log"), mode="a") as journal:
             journal.write(message)
 
-        if status_code == "Error":
+        if status_code == "Error" and global_info.debug_stuids:
             send_wechat_message(
-                stu_list=['', '', ''],
+                stu_list=global_info.debug_stuids,
                 starttime=datetime.now(),
                 room=Room.objects.get(Rid="B107A"),
                 message_type="violated",

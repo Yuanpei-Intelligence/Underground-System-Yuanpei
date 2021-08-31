@@ -60,6 +60,13 @@ class LongTermInfo():
 
         # 是否开启登录系统，默认为开启
         self.debug_stuid = "1800017704" # YHT学号
+        try:
+            self.debug_stuids = load_json['debug']['wechat_receivers']
+            if isinstance(self.debug_stuids, str):
+                self.debug_stuids = self.debug_stuids.replace(' ', '').split(',')
+            self.debug_stuids = list(map(str, self.debug_stuids))
+        except:
+            self.debug_stuids = []
         self.account_auth = True
 
         # end
