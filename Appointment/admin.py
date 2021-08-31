@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone, time, date
 from django.http import JsonResponse  # Json响应
 from django.db import transaction  # 原子化更改数据库
 from Appointment.utils.scheduler_func import addAppoint, scheduler
+import Appointment.utils.scheduler_func as scheduler_func
 from Appointment.utils.utils import operation_writer, send_wechat_message
 from YPUnderground import global_info
 
@@ -146,12 +147,14 @@ class AppointAdmin(admin.ModelAdmin):
         'Astatus_display',
     )
     list_display_links = ('Aid', 'Room')
+    list_per_page = 25
     list_editable = (
         'Astart',
         # 'Afinish',
     )  # 'Ausage'
     list_filter = ('Astart', 'Atime', 'Astatus', 'Atemp_flag')
     date_hierarchy = 'Astart'
+    readonly_fields = ('Atime', )
 
     def Students(self, obj):
         students = [(obj.major_student.Sname, )]
@@ -214,7 +217,8 @@ class AppointAdmin(admin.ModelAdmin):
 
     Astatus_display.short_description = '预约状态'
 
-    actions = ['confirm', 'violate', 'longterm1', 'longterm2', 'longterm4', 'longterm8']
+    actions = [ 'confirm', 'violate', 'refresh_scheduler',
+                'longterm1', 'longterm2', 'longterm4', 'longterm8']
 
     def confirm(self, request, queryset):  # 确认通过
         if not request.user.is_superuser:
@@ -337,6 +341,46 @@ class AppointAdmin(admin.ModelAdmin):
         return self.message_user(request, "设为违约成功!")
 
     violate.short_description = '所选条目 违约'
+
+    
+    def refresh_scheduler(self, request, queryset):
+        '''
+        假设的情况是后台修改了开始和结束时间后，需要重置定时任务
+        因此，旧的定时任务可能处于任何完成状态
+        '''
+        if not request.user.is_superuser:
+            return self.message_user(request=request,
+                                     message='操作失败,没有权限,请联系老师!',
+                                     level=messages.WARNING)
+        if not queryset:
+            return self.message_user(request=request,
+                                     message='请至少选择一个需要更新的预约!',
+                                     level=messages.WARNING)
+        for appoint in queryset:
+            try:
+                aid = appoint.Aid
+                start = appoint.Astart
+                finish = appoint.Afinish
+                if start > finish:
+                    return self.message_user(request=request,
+                                            message='操作失败,{aid}预约开始和结束时间冲突!请勿篡改数据!',
+                                            level=messages.WARNING)
+                scheduler_func.cancel_scheduler(aid)    # 注销原有定时任务 无异常
+                scheduler_func.set_scheduler(appoint)   # 开始时进入进行中 结束后判定
+                if start < datetime.now():              # 如果未开始，修改开始提醒
+                    scheduler_func.set_start_wechat(appoint, notify_new=False)
+            except Exception as e:
+                operation_writer(global_info.system_log,
+                                 "出现更新定时任务失败的问题: " + str(e),
+                                 "func[admin:longterm]",
+                                 "Error")
+                return self.message_user(request=request,
+                                         message=str(e),
+                                         level=messages.WARNING)
+        return self.message_user(request, '定时任务更新成功!')
+            
+    refresh_scheduler.short_description = '更新定时任务'
+    
 
     def longterm_wk(self, request, queryset, week_num):
         if not request.user.is_superuser:
