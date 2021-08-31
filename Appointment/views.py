@@ -202,6 +202,9 @@ def cameracheck(request):   # 摄像头post的后端函数
         if content.Atime.date() == content.Astart.date():
             # 如果预约时间在使用时间的24h之内 则人数下限为2
             num_need = min(global_info.today_min, num_need)
+        if content.Atemp_flag == Appoint.Bool_flag.Yes:
+            # 如果为临时预约 则人数下限为1 不作为合格标准 只是记录
+            num_need = min(global_info.temporary_min, num_need)
         try:
             if room.Rid in {"B109A", "B207"}:  # 康德报告厅&小舞台 不考虑违约
                 content.Astatus = Appoint.Status.CONFIRMED
@@ -621,6 +624,20 @@ def index(request):  # 主页
             try:
                 request.session['Sname'] = Student.objects.get(
                     Sid=request.session['Sid']).Sname
+                # modify by pht: 自动更新姓名
+                if request.session['Sname'] == '未命名' and request.GET.get('name'):
+                    # 获取姓名和首字母
+                    given_name = request.GET['name']
+                    pinyin_list = pypinyin.pinyin(
+                        given_name, style=pypinyin.NORMAL)
+                    szm = ''.join([w[0][0] for w in pinyin_list])
+
+                    # 更新数据库和session
+                    with transaction.atomic():
+                        Student.objects.select_for_update().filter(
+                            Sid=request.session['Sid']).update(
+                            Sname=given_name, pinyin=szm)
+                    request.session['Sname'] = given_name
             except:
                 # 没有这个人 自动添加并提示
                 if global_info.allow_newstu_appoint:
@@ -629,6 +646,10 @@ def index(request):  # 主页
                         try:
                             given_name = request.GET['name']
                         except:
+                            operation_writer(global_info.system_log,
+                                            f"创建未命名用户:学号为{request.session['Sid']}",
+                                             "func[index]",
+                                             "Problem")
                             given_name = "未命名"
                             success = 0
                         # 设置首字母
