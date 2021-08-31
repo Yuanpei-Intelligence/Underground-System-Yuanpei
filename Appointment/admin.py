@@ -1,5 +1,7 @@
 from Appointment.models import Student, Room, Appoint, College_Announcement, CardCheckInfo
 from django.contrib import admin, messages
+import string
+from django.utils.safestring import mark_safe
 from django.utils.html import format_html, format_html_join
 from datetime import datetime, timedelta, timezone, time, date
 from django.http import JsonResponse  # Json响应
@@ -20,7 +22,9 @@ admin.site.register(College_Announcement)
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    search_fields = ('Sid', 'Sname')
+    actions_on_top = True
+    actions_on_bottom = True
+    search_fields = ('Sid', 'Sname', 'pinyin')
     list_display = ('Sid', 'Sname', 'Scredit', 'superuser')
     list_display_links = ('Sid', 'Sname')
     list_editable = ('Scredit', 'superuser')
@@ -123,6 +127,9 @@ class RoomAdmin(admin.ModelAdmin):
 
 @admin.register(Appoint)
 class AppointAdmin(admin.ModelAdmin):
+    actions_on_top = True
+    actions_on_bottom = True
+    LETTERS = set(string.digits + string.ascii_letters + string.punctuation)
     search_fields = ('Aid', 'Room__Rtitle',
                      'major_student__Sname', 'Room__Rid', "students__Sname")
     list_display = (
@@ -130,11 +137,12 @@ class AppointAdmin(admin.ModelAdmin):
         'Room',
         'Astart',
         # 'Afinish',
-        'Atime',  # 'Ausage',
-        # 'major_student_display',
+        # 'Atime',  # 'Ausage',
         'major_student_display',
         'Students',
-        'total_display',
+        # 'total_display',
+        'usage_display',
+        'check_display',
         'Astatus_display',
     )
     list_display_links = ('Aid', 'Room')
@@ -142,14 +150,37 @@ class AppointAdmin(admin.ModelAdmin):
         'Astart',
         # 'Afinish',
     )  # 'Ausage'
-    list_filter = ('Astart', 'Atime', 'Astatus')
+    list_filter = ('Astart', 'Atime', 'Astatus', 'Atemp_flag')
     date_hierarchy = 'Astart'
 
     def Students(self, obj):
-        return format_html_join('\n', '<li>{}</li>',
-                                ((stu.Sname, ) for stu in obj.students.all()))
+        students = [(obj.major_student.Sname, )]
+        students += [(stu.Sname, ) for stu in obj.students.all()
+                                    if stu != obj.major_student]
+        return format_html_join('\n', '<li>{}</li>', students)
 
     Students.short_description = '参与人'
+
+    def usage_display(self, obj):
+        batch = 6
+        half_len = 18
+        usage = obj.Ausage
+        if len([c for c in usage if c in AppointAdmin.LETTERS]) > .6 * len(usage):
+            batch *= 2
+            half_len *= 2
+        if len(obj.Ausage) < half_len * 2:
+            usage = obj.Ausage
+        else:
+            usage = obj.Ausage[:half_len] + '...' + obj.Ausage[3-half_len:]
+        usage = '<br/>'.join([usage[i:i+batch] for i in range(0, len(usage), batch)])
+        return mark_safe(usage)
+
+    usage_display.short_description = "用途"
+
+    def check_display(self, obj):
+        return f'{obj.Acamera_ok_num}/{obj.Acamera_check_num}'
+
+    check_display.short_description = "通过率"
 
     def total_display(self, obj):
         return obj.Anon_yp_num + obj.Ayp_num
@@ -172,15 +203,18 @@ class AppointAdmin(admin.ModelAdmin):
             Appoint.Status.JUDGED: 'yellowgreen',
         }
         color_code = status2color[obj.Astatus]
+        status = obj.get_status()
+        # if obj.Atemp_flag == Appoint.Bool_flag.Yes:
+        #     status = '临时:' + status
         return format_html(
             '<span style="color: {};">{}</span>',
             color_code,
-            obj.get_status(),
+            status,
         )
 
     Astatus_display.short_description = '预约状态'
 
-    actions = ['confirm', 'violate', 'longterm1', 'longterm4', 'longterm8']
+    actions = ['confirm', 'violate', 'longterm1', 'longterm2', 'longterm4', 'longterm8']
 
     def confirm(self, request, queryset):  # 确认通过
         if not request.user.is_superuser:
@@ -395,6 +429,10 @@ class AppointAdmin(admin.ModelAdmin):
         week_num = 1  # 往后增加多少次
         return self.longterm_wk(request, queryset, week_num)
 
+    def longterm2(self, request, queryset):
+        week_num = 2  # 往后增加多少次
+        return self.longterm_wk(request, queryset, week_num)
+
     def longterm4(self, request, queryset):
         week_num = 4  # 往后增加多少次
         return self.longterm_wk(request, queryset, week_num)
@@ -404,6 +442,7 @@ class AppointAdmin(admin.ModelAdmin):
         return self.longterm_wk(request, queryset, week_num)
 
     longterm1.short_description = "增加一周本预约"
+    longterm2.short_description = "增加两周本预约"
     longterm4.short_description = "增加四周本预约"
     longterm8.short_description = "增加八周本预约"
 
