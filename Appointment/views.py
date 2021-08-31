@@ -1075,16 +1075,18 @@ def logout(request):    # 登出系统
 
 @csrf_exempt
 def summary(request):  # 主页
+    Sid = ""
     if not identity_check(request):
         try:
             if request.method == "GET":
-                stu_id_ming = request.GET['Sid']
-                stu_id_code = request.GET['Secret']
+                Sid = request.GET['Sid']
+                secret = request.GET['Secret']
                 timeStamp = request.GET['timeStamp']
-                request.session['Sid'] = stu_id_ming
-                request.session['Secret'] = stu_id_code
-                request.session['timeStamp'] = timeStamp
-                assert identity_check(request) is True
+
+                # 认证通过
+                t = datetime.utcnow().timestamp()
+                assert float(t) - float(timeStamp) < 3600.0
+                assert hash_identity_coder.verify(Sid + timeStamp, secret)
 
             else:  # POST 说明是display的修改,但是没登陆,自动错误
                 raise SystemError
@@ -1093,72 +1095,37 @@ def summary(request):  # 主页
                 reverse('Appointment:index'), reverse('Appointment:summary')))
 
             # 至此获得了登录的授权 但是这个人可能不存在 加判断
-        try:
-            request.session['Sname'] = Student.objects.get(
-                Sid=request.session['Sid']).Sname
-            return redirect(reverse("Appointment:summary"))
-        except:
-            return redirect(reverse("Appointment:logout"))
 
     try:
-        Sid = request.session['Sid']
+        if not Sid:
+            Sid = request.session['Sid']
         with open(f'Appointment/summary_info/{Sid}.txt','r',encoding='utf-8') as fp:
             myinfo = json.load(fp)
     except:
         return redirect(reverse("Appointment:logout"))
 
-    Rid_list = {
-        'B104': '无键盘自习室',
-        'B106': '自习室',
-        'B107A': '研讨室',
-        'B107B': '研讨室',
-        'B108': '自习室',
-        'B109A': '康德报告厅',
-        'B111': '研讨/书法室',
-        'B112': '自习室',
-        'B114': '自习室',
-        'B118': '自习室',
-        'B119': '研讨室',
-        'B205': '研讨/航模室',
-        'B206': '研讨/绘画室',
-        'B207': '演出区',
-        'B208': '台球室',
-        'B209': '研讨室',
-        'B214': '活动/舞蹈室',
-        'B215': '研讨室',
-        'B216': '健身室',
-        'B217': '活动/电影室',
-        'B218': '乒乓球房',
-        'B220': '音乐室',
-        'B221': '音乐室',
-        'B222': '力量室',
-        'R301': '元创空间',
-        'R302': '元创空间',
-        'R303': '元创空间',
-        'R304': '元创空间',
-        'R305': '元创空间'
-        }
+    Rid_list = {room.Rid: room.Rtitle.split('(')[0] for room in Room.objects.all()}
 
     # page 0
     Sname = myinfo['Sname']
 
     # page 1
-    all_appoint_num = 12034
-    all_appoint_len = 18473.17
-    all_appoint_len_day = int(all_appoint_len/24)
+    all_appoint_num = 12649
+    all_appoint_len = 19268.17
+    all_appoint_len_day = round(all_appoint_len/24)
 
     # page 2
-    appoint_make_num = myinfo['appoint_make_num']
-    appoint_make_num_pct = round(appoint_make_num/all_appoint_num, 4)
-    appoint_make_hour = myinfo['appoint_make_hour']
-    appoint_make_hour_pct = round(appoint_make_hour/all_appoint_len, 4)
-    appoint_attend_num = myinfo['appoint_attend_num']
-    appoint_attend_hour = myinfo['appoint_attend_hour']
+    appoint_make_num = int(myinfo['appoint_make_num'])
+    appoint_make_num_pct = myinfo['rank_num']
+    appoint_make_hour = round(myinfo['appoint_make_hour'], 2)
+    appoint_make_hour_pct = myinfo['rank_hour']
+    appoint_attend_num = int(myinfo['appoint_attend_num'])
+    appoint_attend_hour = round(myinfo['appoint_attend_hour'], 2)
 
     # page 3
-    hottest_room_1 = ['B214', Rid_list['B214'], 1843]
-    hottest_room_2 = ['B220', Rid_list['B220'], 1630]
-    hottest_room_3 = ['B221', Rid_list['B221'], 1542]
+    hottest_room_1 = ['B214', Rid_list['B214'], 1952]
+    hottest_room_2 = ['B220', Rid_list['B220'], 1715]
+    hottest_room_3 = ['B221', Rid_list['B221'], 1661]
 
     # page 4
     Sfav_room_id = myinfo['favourite_room_id']
@@ -1171,9 +1138,15 @@ def summary(request):  # 主页
     if Smake_time_most:
         Smake_time_most = int(Smake_time_most)
 
-    Suse_time_list = myinfo['use_time_list'].split(';')
+    try:
+        Suse_time_list = myinfo['use_time_list'].split(';')
+    except:
+        Suse_time_list = [0]*24
     Suse_time_list = list(map(lambda x: int(x), Suse_time_list))
-    Suse_time_most = Suse_time_list.index(max(Suse_time_list))
+    try:
+        Suse_time_most = Suse_time_list.index(max(Suse_time_list))
+    except:
+        Suse_time_most = -1
     Suse_time_list_js = json.dumps(Suse_time_list[6:])
     Suse_time_list_label = [str(i) for i in range(6, 24)]
     Suse_time_list_label_js = json.dumps(Suse_time_list_label)
@@ -1206,7 +1179,7 @@ def summary(request):  # 主页
     aygj = myinfo['aygj']
     if aygj:
         aygj = aygj.split('|')
-        aygj_num = 78
+        aygj_num = 80
 
     # page 10 早起冠军
     zqgj = myinfo['zqgj']
@@ -1214,7 +1187,7 @@ def summary(request):  # 主页
         zqgj = zqgj.split('|')
         # print(zqgj)
         zqgj.insert(6, Rid_list[zqgj[5]])
-        zqgj_num = 107
+        zqgj_num = 109
     
     # page 11 未雨绸缪
     wycm = myinfo['wycm']
@@ -1225,7 +1198,7 @@ def summary(request):  # 主页
     if jxcz:
         jxcz = jxcz.split('|')
         jxcz.insert(6, Rid_list[jxcz[5]])
-        jxcz_num = 100
+        jxcz_num = 102
 
     # page 13 元培鸽王
     ypgw = myinfo['ypgw']

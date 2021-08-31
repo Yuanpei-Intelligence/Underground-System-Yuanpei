@@ -159,8 +159,7 @@
     {% endif %}
 
 
-    {% if appoint_make_num %}
-
+    
     <section class="section page page-5">
       <div class="mountain mountain-1"></div>
       <div class="mountain mountain-2"></div>
@@ -172,16 +171,17 @@
       <div class="tree tree-6"></div>
       <div class="tree tree-7"></div>
       <div class="tree tree-8"></div>
-      <!-- <div class="moon-wrapper">
-        <div class="moon">
-          <div class="man"></div>
-        </div>
-      </div> -->
       <div class="content">
+
+        {% if appoint_make_num %}
         <p class="para">你最常在<span class="fc-red">{{Smake_time_most}}:00-{{Smake_time_most|add:1}}:00</span></p>
         <p class="para para-1">发起预约</p>
         <p class="para para-3">而在<span class="fc-red">{{Suse_time_most}}:00-{{Suse_time_most|add:1}}:00</span></p>
         <p class="para para-1">使用房间最为频繁</p>
+        {% elif appoint_attend_num %}
+        <p class="para para-3">你在<span class="fc-red">{{Suse_time_most}}:00-{{Suse_time_most|add:1}}:00</span></p>
+        <p class="para para-1">使用房间最为频繁</p>
+        {% endif %}
         <p class="para para-3">在忙碌的同时</p>
         <p class="para para-1">不要忘了好好休息</p>
       </div>
@@ -214,8 +214,6 @@
         option && myChart.setOption(option);
       </script>
     </section>
-
-    {% endif %}
 
 
 
@@ -457,7 +455,7 @@
         <div class="content">
           <p class="para para-1">本学年</p>
           <p class="para-2 para">你因为<span class="fs-18 fc-red">迟到</span>而违规的次数达到<span
-              class="fs-18 fc-red">{{ypgw}}/span>次</p>
+              class="fs-18 fc-red">{{ypgw}}</span>次</p>
           <p class="para-2 para">解锁成就<span class="fs-18 fc-red">元培鸽王</span></p>
           <p class="para-2 para">本年度仅有<span class="fs-18 fc-red">{{ypgw_num}}</span>人获此殊荣</p>
           <p class="para-2 para">分享到朋友圈，寻找身边志同道合的鸽子</p>
@@ -486,12 +484,12 @@
         <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;你好！</p>
         <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2021年秋季，Yuanpei Profile（元培智慧校园系统）即将上线，在这座“看不见的城市”里，你会解锁以下角落：</p>
 
-        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元培门户：生活展示窗口</p>
-        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;成长档案：一串成长足迹</p>
-        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;订阅服务：消息提醒助手</p>
-        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;事务平台：事务一键解决</p>
-        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通知信箱：你的事务管家</p>
-        <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元气积分：意愿点与动力</p>
+        <p class="para para-11" style="text-align: center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元培门户：生活展示窗口</p>
+        <p class="para para-11" style="text-align: center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;成长档案：一串成长足迹</p>
+        <p class="para para-11" style="text-align: center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;订阅服务：消息提醒助手</p>
+        <p class="para para-11" style="text-align: center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;事务平台：事务一键解决</p>
+        <p class="para para-11" style="text-align: center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;通知信箱：你的事务管家</p>
+        <p class="para para-11" style="text-align: center;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;元气积分：意愿点与动力</p>
 
         <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在这里，你能够享受活动举办的全线上操作服务，代码替你奔跑，只需动动手指，你就能获知学院所有的活动消息。</p>
         <p class="para para-11">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在这里，你可以有多种存在方式：安利音乐、设置个性签名、保存成长节点，你表达，故你在。</p>
