@@ -32,7 +32,7 @@ ip_room_dict = {
     "149": "B111",
     "141": "B112",
     "148": "B112",
-    # "138": "B114", 不准 自习室
+    # "138": "B114", # 不准 自习室
     "139": "B114",
     "144": "B118",
     "145": "B118",
@@ -48,10 +48,10 @@ ip_room_dict = {
     "103": "B209",
     "108": "B209",
     "121": "B214",
-    # "128": "B214", 镜子 舞蹈室
+    "128": "B214", # 镜子 舞蹈室
     "119": "B215",
     "117": "B216",
-    # "124": "B216", 镜子 跑步机房
+    "124": "B216", # 镜子 跑步机房
     "122": "B217",
     "126": "B217",
     "113": "B218",
@@ -119,65 +119,49 @@ send_message = requests.session()
 
 # , credit=''):
 def send_wechat_message(stu_list, starttime, room, message_type, major_student, usage, announcement, num, reason=''):
+    # --- modify by pht: 适当简化了代码 --- #
+    title = '地下室预约提醒'
+    is_admin = 'admin' in message_type or message_type in {'longterm'}
+    time_and_place = []
+    show_appoint_info = True
+    show_main_student = True
+    appoint_info = []
+    show_announcement = False
+    extra_info = []
     if message_type == 'new':
-        message = '您有一条新的预约\n'  # 发起者 用途 人数
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
-        if announcement:
-            message += '\n预约通知：'+announcement
+        title = '您有一条新的预约'  # 发起者 用途 人数
+        show_announcement = True
     elif message_type == 'start':
-        message = '您有一条预约即将在15分钟后开始\n'  # 发起者 用途 人数
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
-        if announcement:
-            message += '\n预约通知：'+announcement
+        title = '您有一条预约即将在15分钟后开始'  # 发起者 用途 人数
+        show_announcement = True
     elif message_type == 'new&start':
-        message = '您有一条新的预约\n并即将在15分钟内开始'  # 发起者 用途 人数
-        message += '\n时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
-        if announcement:
-            message += '\n预约通知：'+announcement
+        title = '您有一条新的预约并即将在15分钟内开始'  # 发起者 用途 人数
+        show_announcement = True
     elif message_type == 'violated':
-        message = '您有一条新增的违约记录'  # 原因
-        message += '\n时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n原因：'+reason  # +'\n当前信用分：'+str(credit)
+        title = '您有一条新增的违约记录'  # 原因
+        show_appoint_info = False
+        extra_info = ['原因：' + reason]  # '当前信用分：'+str(credit)
     elif message_type == 'cancel':
-        message = '您有一条预约被取消'  # 发起者 用途 人数
-        message += '\n时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
+        title = '您有一条预约被取消'  # 发起者 用途 人数
     elif message_type == 'longterm':    # 发起一条长线预约
-        message = '【管理员操作】您有一条预约新增了未来'+str(reason)+'周的同时段预约\n'  # 类型
-        message += '时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
-        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
-        if announcement:
-            message += '\n预约通知：'+announcement
+        title = f'您的预约新增了{reason}周同时段预约'  # 类型
+        show_announcement = True
     elif message_type == 'confirm_admin_w2c':    # WAITING to CONFIRMED
-        message = '【管理员操作】您有一条预约已确认完成\n'  # 类型
-        message += '时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
-        message += '\n用途：'+usage+'\n人数：'+str(num)
+        title = '您有一条预约已确认完成'  # 类型
+        show_main_student = False
     elif message_type == 'confirm_admin_v2j':    # VIOLATED to JUDGED
-        message = '【管理员操作】您有一条违约的预约申诉成功\n'  # 类型
-        message += '时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
-        message += '\n用途：'+usage+'\n人数：'+str(num)
+        title = '您有一条违约的预约申诉成功'  # 类型
+        show_main_student = False
     elif message_type == 'violate_admin':    # VIOLATED
-        message = '【管理员操作】您有一条预约被判定违约\n'  # 类型
-        message += '时间：' + \
-            starttime.strftime("%Y-%m-%d %H:%M") + '\n地点：'+str(room)
-        message += '\n用途：'+usage+'\n人数：'+str(num)+'\n如有疑问请联系管理员'
+        title = '您有一条预约被判定违约'  # 类型
+        show_main_student = False
+        extra_info = ['如有疑问请联系管理员']
     elif message_type == 'temp_appointment':  # 临时预约
-        message = '您发起了一条临时预约\n'
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n发起者：'+major_student+'\n用途：'+usage+'\n人数：'+str(num)
+        title = '您发起了一条临时预约'
     elif message_type == 'temp_appointment_fail':  # 临时预约失败
-        message = '您发起的临时预约失败\n'
-        message += '时间：'+starttime.strftime("%Y-%m-%d %H:%M")+'\n地点：'+str(room)
-        message += '\n原因：'+reason
+        title = '您发起的临时预约失败'
+        show_appoint_info = False
+        extra_info = ['原因：' + reason]
     else:
         # todo: 记得测试一下!为什么之前出问题的log就找不到呢TAT
         operation_writer(global_info.system_log,
@@ -185,6 +169,31 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
                              room) + message_type + "出错，原因：unknown message_type", "func[send_wechat_message]",
                          "Problem")
         return
+    
+    try:
+        if is_admin:
+            title = f'【管理员操作】\n{title}<title>'
+        else:
+            title = title + '\n'
+
+        if True:    # 目前所有信息都显示时间地点
+            time_and_place = ['时间：'+starttime.strftime("%Y-%m-%d %H:%M"), '地点：'+str(room)]
+        
+        if show_appoint_info and not appoint_info:
+            appoint_info = ['用途：'+usage, '人数：'+str(num)]
+            if show_main_student:
+                appoint_info = ['发起者：' + major_student] + appoint_info
+        
+        if show_announcement and announcement:
+            extra_info = ['预约通知：' + announcement] + extra_info
+    
+        message = title + '\n'.join(time_and_place + appoint_info + extra_info)
+
+    except Exception as e:
+        operation_writer(global_info.system_log,
+                         f"尝试整合信息时出错，原因：{e}", "func[send_wechat_message]",
+                         "Problem")
+    # --- modify end(2021.9.1) --- #
 
     secret = hash_wechat_coder.encode(message)
     post_data = {
