@@ -70,6 +70,10 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
         original_qualified_rate += 0.05             # 建议在0.2-0.4之间 极端可考虑0.5 目前仅测试
     if appoint.Atemp_flag == 1:                     # 对于临时预约，不检查摄像头 by lhw（2021.7.13）
         original_qualified_rate = 0             
+    if appoint.Room.Rid in {'B109A', 'B207'}:       # 公共区域
+        original_qualified_rate = 0
+    if appoint.Room.Rid[:1] == 'R':                 # 俄文楼
+        original_qualified_rate = 0
     return original_qualified_rate
 
 
@@ -142,6 +146,12 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
             else:   # 通过
                 appoint.Astatus = Appoint.Status.CONFIRMED
                 appoint.save()
+
+    elif appoint.Astatus == Appoint.Status.CONFIRMED:   # 可能已经判定通过，如公共区域和俄文楼
+        rid = appoint.Room.Rid
+        if rid[:1] != 'R' and rid not in {'B109A', 'B207'}:
+            utils.operation_writer(
+                global_info.system_log, f"预约{str(Aid)}的状态异常: 要求检查的房间提前合格", "web_func.finishAppoint", "Error")
 
     elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常
         utils.operation_writer(
