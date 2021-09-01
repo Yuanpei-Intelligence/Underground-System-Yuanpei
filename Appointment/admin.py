@@ -493,7 +493,12 @@ class AppointAdmin(admin.ModelAdmin):
 
 @admin.register(CardCheckInfo)
 class CardCheckInfoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'Cardroom', 'Cardstudent__Sname', 'Cardtime', 'CardStatus', 'ShouldOpenStatus', )  # 'is_delete'
+    list_display = ('id', 'Cardroom', 'student_display', 'Cardtime', 'CardStatus', 'ShouldOpenStatus', )  # 'is_delete'
     search_fields = ('Cardroom__Rtitle',
                      'Cardstudent__Sname', 'Cardroom__Rid', "Cardstudent__Sname", "id")
     list_filter = ('CardStatus', 'ShouldOpenStatus')
+    
+    def student_display(self, obj):
+        return obj.Cardstudent.Sname
+
+    student_display.short_description = "刷卡者"
