@@ -367,7 +367,7 @@ class AppointAdmin(admin.ModelAdmin):
                                             level=messages.WARNING)
                 scheduler_func.cancel_scheduler(aid)    # 注销原有定时任务 无异常
                 scheduler_func.set_scheduler(appoint)   # 开始时进入进行中 结束后判定
-                if start < datetime.now():              # 如果未开始，修改开始提醒
+                if datetime.now() < start:              # 如果未开始，修改开始提醒
                     scheduler_func.set_start_wechat(appoint, notify_new=False)
             except Exception as e:
                 operation_writer(global_info.system_log,
