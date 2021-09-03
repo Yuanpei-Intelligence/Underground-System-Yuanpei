@@ -39,10 +39,10 @@ def clear_appointments():
             appoints_to_delete.delete()
         except Exception as e:
             utils.operation_writer(global_info.system_log, "定时删除任务出现错误: "+str(e),
-                             "func[clear_appointments]", "Problem")
+                             "scheduler_func.clear_appointments", "Problem")
 
         # 写入日志
-        utils.operation_writer(global_info.system_log, "定时删除任务成功", "func[clear_appointments]")
+        utils.operation_writer(global_info.system_log, "定时删除任务成功", "scheduler_func.clear_appointments")
 
 
 def set_scheduler(appoint):
@@ -55,7 +55,7 @@ def set_scheduler(appoint):
         utils.operation_writer(
                                 global_info.system_log,
                                 f'预约{appoint.Aid}时间为{start}<->{finish}，未能设置定时任务',
-                                'func[set_scheduler]',
+                                'scheduler_func.set_scheduler',
                                 'Error'
                                 )
         return False            # 直接返回，预约不需要设置
@@ -63,7 +63,7 @@ def set_scheduler(appoint):
         utils.operation_writer(
                                 global_info.system_log,
                                 f'预约{appoint.Aid}在设置定时任务时已经结束',
-                                'func[set_scheduler]',
+                                'scheduler_func.set_scheduler',
                                 'Error'
                                 )
         return False            # 直接返回，预约不需要设置
@@ -159,15 +159,15 @@ def cancelFunction(request):  # 取消预约
             scheduler.remove_job(f'{appoint.Aid}_finish')
         except:
             utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
-                             "取消时发现不存在计时器", 'func[cancelAppoint]', "Problem")
+                             "取消时发现不存在计时器", 'scheduler_func.cancelAppoint', "Problem")
         try:
             scheduler.remove_job(f'{appoint.Aid}_start')
         except:
             utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
-                "取消时未发现开始计时器，可能已经开始", 'func[cancelAppoint]', "Problem")
+                "取消时未发现开始计时器，可能已经开始", 'scheduler_func.cancelAppoint', "Problem")
         
         utils.operation_writer(appoint.major_student.Sid, "取消了预约" +
-                         str(appoint.Aid), "func[cancelAppoint]", "OK")
+                         str(appoint.Aid), "scheduler_func.cancelAppoint", "OK")
         warn_code = 2
         warning = "成功取消对" + appoint_room_name + "的预约!"
     # send_status, err_message = utils.send_wechat_message([appoint.major_student.Sid],appoint.Astart,appoint.Room,"cancel")
@@ -191,7 +191,7 @@ def cancelFunction(request):  # 取消预约
     if send_status == 1:
         # 记录错误信息
         utils.operation_writer(global_info.system_log, "预约" +
-                             str(appoint.Aid) + "取消时向微信发消息失败，原因："+err_message, "func[addAppoint]", "Problem")
+                             str(appoint.Aid) + "取消时向微信发消息失败，原因："+err_message, "scheduler_func.addAppoint", "Problem")
     '''
 
     # cancel wechat scheduler
@@ -199,7 +199,7 @@ def cancelFunction(request):  # 取消预约
         scheduler.remove_job(f'{appoint.Aid}_start_wechat')
     except:
         utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
-                         "取消时发现不存在wechat计时器，但也可能本来就没有", 'func[cancelAppoint]', "OK")
+                         "取消时发现不存在wechat计时器，但也可能本来就没有", 'scheduler_func.cancelAppoint', "OK")
 
     return redirect(
         reverse("Appointment:admin_index") + "?warn_code=" + str(warn_code) +
@@ -233,7 +233,7 @@ def set_start_wechat(appoint, students_id=None, notify_new=True):
                                 next_run_time=datetime.now() + timedelta(seconds=5))
         else:
             utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
-                        "尝试发送给微信时已经开始，且并非临时预约", 'func[set_start_wechat]', "Problem")
+                        "尝试发送给微信时已经开始，且并非临时预约", 'scheduler_func.set_start_wechat', "Problem")
             return False
     elif datetime.now() <= appoint.Astart - timedelta(minutes=15):  # 距离预约开始还有15分钟以上，提醒有新预约&定时任务
         # print('距离预约开始还有15分钟以上，提醒有新预约&定时任务', notify_new)
@@ -441,7 +441,7 @@ def addAppoint(contents):  # 添加预约, main function
                             and appoint.Anon_yp_num == contents['non_yp_num'] and contents['Sid'] == appoint.major_student_id:
                         # Room不用检查，肯定是同一个房间
                         utils.operation_writer(
-                            major_student.Sid, "重复发起同时段预约，预约号"+str(appoint.Aid), "func[addAppoint]", "OK")
+                            major_student.Sid, "重复发起同时段预约，预约号"+str(appoint.Aid), "scheduler_func.addAppoint", "OK")
                         return JsonResponse({'data': appoint.toJson()}, status=200)
                     else:
                         # 预约冲突
@@ -489,11 +489,11 @@ def addAppoint(contents):  # 添加预约, main function
                         )
 
             utils.operation_writer(major_student.Sid, "发起预约，预约号" +
-                             str(appoint.Aid), "func[addAppoint]", "OK")
+                             str(appoint.Aid), "scheduler_func.addAppoint", "OK")
 
     except Exception as e:
         utils.operation_writer(global_info.system_log, "学生" + str(major_student) +
-                         "出现添加预约失败的问题:"+str(e), "func[addAppoint]", "Error")
+                         "出现添加预约失败的问题:"+str(e), "scheduler_func.addAppoint", "Error")
         return JsonResponse({'statusInfo': {
             'message': '添加预约失败!请与管理员联系!',
         }},

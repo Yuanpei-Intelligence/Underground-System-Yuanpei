@@ -59,7 +59,7 @@ Views.py 使用说明
 # )
 # user表示这条数据对应的log记录对象，为Sid或者是system_log
 # message记录这条log的主体信息
-# source表示写入这个log的位置，表示为"func[函数名]"
+# source表示写入这个log的位置，表示为"文件名.函数名"
 # status_code为"OK","Problem","Error",其中Error表示需要紧急处理的问题，会发送到管理员的手机上
 
 # 一些固定值
@@ -185,7 +185,7 @@ def cameracheck(request):   # 摄像头post的后端函数
 
     except Exception as e:
         operation_writer(global_info.system_log, "房间"+str(rid) +
-                         "更新摄像头人数失败1: "+str(e), "func[cameracheck]", "Error")
+                         "更新摄像头人数失败1: "+str(e), "views.cameracheck", "Error")
 
         return JsonResponse({'statusInfo': {
             'message': '更新摄像头人数失败!',
@@ -252,7 +252,7 @@ def cameracheck(request):   # 摄像头post的后端函数
                 # add end
         except Exception as e:
             operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-                             "更新摄像头人数失败2: "+str(e), "func[cameracheck]", "Error")
+                             "更新摄像头人数失败2: "+str(e), "views.cameracheck", "Error")
 
             return JsonResponse({'statusInfo': {
                 'message': '更新预约状态失败!',
@@ -266,19 +266,19 @@ def cameracheck(request):   # 摄像头post的后端函数
                     # 该函数只是把appoint标记为迟到(填写reason)并修改状态为进行中，不发送微信提醒
                 if not status:
                     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-                                     "设置为迟到时的返回值异常 "+tempmessage, "func[cameracheck]", "Error")
+                                     "设置为迟到时的返回值异常 "+tempmessage, "views.cameracheck", "Error")
         except Exception as e:
             operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-                             "在迟到状态设置过程中: "+tempmessage, "func[cameracheck]", "Error")
+                             "在迟到状态设置过程中: "+tempmessage, "views.cameracheck", "Error")
             # added by wxy: 违约原因:迟到
             # status, tempmessage = appoint_violate(
             #     content, Appoint.Reason.R_LATE)
             # if not status:
             #     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-            #                      "因迟到而违约,返回值出现异常: "+tempmessage, "func[cameracheck]", "Error")
+            #                      "因迟到而违约,返回值出现异常: "+tempmessage, "views.cameracheck", "Error")
         # except Exception as e:
         #     operation_writer(global_info.system_log, "预约"+str(content.Aid) +
-        #                      "在迟到违约过程中: "+tempmessage, "func[cameracheck]", "Error")
+        #                      "在迟到违约过程中: "+tempmessage, "views.cameracheck", "Error")
 
         return JsonResponse({}, status=200)  # 返回空就好
     else:  # 否则的话 相当于没有预约 正常返回
@@ -571,7 +571,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     #     operation_writer(global_info.system_log,
     #                      "可以开门却不开门的致命错误，房间号为" +
     #                      str(Rid) + ",学生为"+str(Sid)+",错误为:"+str(e),
-    #                      "func[doorcheck]",
+    #                      "views.doorcheck",
     #                      "Error")
     #     cardcheckinfo_writer(student, room, False, True)
     #     return JsonResponse(  # 未知错误
@@ -648,7 +648,7 @@ def index(request):  # 主页
                         except:
                             operation_writer(global_info.system_log,
                                             f"创建未命名用户:学号为{request.session['Sid']}",
-                                             "func[index]",
+                                             "views.index",
                                              "Problem")
                             given_name = "未命名"
                             success = 0

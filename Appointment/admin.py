@@ -250,7 +250,7 @@ class AppointAdmin(admin.ModelAdmin):
                                           id=f'{appoint.Aid}_confirm_admin_wechat',
                                           next_run_time=datetime.now() + timedelta(seconds=5))  # 5s足够了
                         operation_writer(global_info.system_log, str(appoint.Aid)+"号预约被管理员从WAITING改为CONFIRMED" +
-                                 "发起人："+str(appoint.major_student), "func[admin:confirm]", "OK")
+                                 "发起人："+str(appoint.major_student), "admin.confirm", "OK")
                     elif appoint.Astatus == Appoint.Status.VIOLATED:
                         appoint.Astatus = Appoint.Status.JUDGED
                         # for stu in appoint.students.all():
@@ -275,7 +275,7 @@ class AppointAdmin(admin.ModelAdmin):
                                           id=f'{appoint.Aid}_confirm_admin_wechat',
                                           next_run_time=datetime.now() + timedelta(seconds=5))  # 5s足够了
                         operation_writer(global_info.system_log, str(appoint.Aid)+"号预约被管理员从VIOLATED改为JUDGED" +
-                                 "发起人："+str(appoint.major_student), "func[admin:confirm]", "OK")
+                                 "发起人："+str(appoint.major_student), "admin.confirm", "OK")
 
                     else:  # 不允许更改
                         some_invalid = 1
@@ -332,7 +332,7 @@ class AppointAdmin(admin.ModelAdmin):
                                   id=f'{appoint.Aid}_violate_admin_wechat',
                                   next_run_time=datetime.now() + timedelta(seconds=5))  # 5s足够了
                 operation_writer(global_info.system_log, str(
-                    appoint.Aid)+"号预约被管理员设为违约"+"发起人："+str(appoint.major_student), "func[admin:violate]", "OK")
+                    appoint.Aid)+"号预约被管理员设为违约"+"发起人："+str(appoint.major_student), "admin.violate", "OK")
         except:
             return self.message_user(request=request,
                                      message='操作失败!只允许对违约的条目操作!',
@@ -372,7 +372,7 @@ class AppointAdmin(admin.ModelAdmin):
             except Exception as e:
                 operation_writer(global_info.system_log,
                                  "出现更新定时任务失败的问题: " + str(e),
-                                 "func[admin:longterm]",
+                                 "admin.longterm",
                                  "Error")
                 return self.message_user(request=request,
                                          message=str(e),
@@ -444,7 +444,7 @@ class AppointAdmin(admin.ModelAdmin):
                         '''
             except Exception as e:
                 operation_writer(global_info.system_log, "学生" + str(appoint.major_student) +
-                                 "出现添加长线化预约失败的问题:"+str(e), "func[admin:longterm]", "Error")
+                                 "出现添加长线化预约失败的问题:"+str(e), "admin.longterm", "Error")
                 return self.message_user(request=request,
                                          message=str(e),
                                          level=messages.WARNING)
@@ -466,7 +466,7 @@ class AppointAdmin(admin.ModelAdmin):
                               id=f'{appoint.Aid}_new_wechat',
                               next_run_time=datetime.now() + timedelta(seconds=5))  # 2s足够了
             operation_writer(appoint.major_student.Sid, "发起"+str(week_num) +
-                             "周的长线化预约, 原始预约号"+str(appoint.Aid), "func[admin:longterm]", "OK")
+                             "周的长线化预约, 原始预约号"+str(appoint.Aid), "admin.longterm", "OK")
         return self.message_user(request, '长线化成功!')
 
     def longterm1(self, request, queryset):
