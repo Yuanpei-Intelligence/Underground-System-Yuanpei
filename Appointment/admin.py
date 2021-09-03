@@ -493,7 +493,7 @@ class AppointAdmin(admin.ModelAdmin):
 
 @admin.register(CardCheckInfo)
 class CardCheckInfoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'Cardroom', 'student_display', 'Cardtime', 'CardStatus', 'ShouldOpenStatus', )  # 'is_delete'
+    list_display = ('id', 'Cardroom', 'student_display', 'Cardtime', 'CardStatus', 'ShouldOpenStatus', 'Message')  # 'is_delete'
     search_fields = ('Cardroom__Rtitle',
                      'Cardstudent__Sname', 'Cardroom__Rid', "Cardstudent__Sname", "id")
     list_filter = ('CardStatus', 'ShouldOpenStatus')

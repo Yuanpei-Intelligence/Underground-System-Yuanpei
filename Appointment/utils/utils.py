@@ -119,6 +119,7 @@ send_message = requests.session()
 
 # , credit=''):
 def send_wechat_message(stu_list, starttime, room, message_type, major_student, usage, announcement, num, reason=''):
+    '''stu_list: Iter[sid] 学号列表，不是学生!'''
     # --- modify by pht: 适当简化了代码 --- #
     title = '地下室预约提醒'
     is_admin = 'admin' in message_type or message_type in {'longterm'}

@@ -546,7 +546,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                     cardcheckinfo_writer(
                         student, room, False, False, f"刷卡拒绝：临时预约失败（{message}）")
                     send_wechat_message(
-                        [student], start, room, "temp_appointment_fail", student, "临时预约", "", 1, message)
+                        [Sid], start, room, "temp_appointment_fail", student, "临时预约", "", 1, message)
                     return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
             else:   # 预约时长不超过5分钟 或 预约时间不合法
@@ -554,7 +554,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                 cardcheckinfo_writer(student, room, False,
                                      False, f"刷卡拒绝：临时预约失败（{message}）")
                 send_wechat_message(
-                    [student], start, room, "temp_appointment_fail", student, "临时预约", "", 1, message)
+                    [Sid], start, room, "temp_appointment_fail", student, "临时预约", "", 1, message)
                 return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
     # --- modify end (2021.7.10) --- #

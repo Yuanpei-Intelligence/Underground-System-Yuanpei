@@ -485,7 +485,7 @@ def addAppoint(contents):  # 添加预约, main function
             set_start_wechat(
                         appoint,
                         students_id=students_id,
-                        notify_new=bool(contents['new_require'])
+                        notify_new=bool(contents.get('new_require', True))
                         )
 
             utils.operation_writer(major_student.Sid, "发起预约，预约号" +
