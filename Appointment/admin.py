@@ -83,12 +83,12 @@ class StudentAdmin(admin.ModelAdmin):
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
     list_display = ('Rid', 'Rtitle', 'Rmin', 'Rmax', 'Rstart', 'Rfinish',
-                    'Rstatus_display', 'Rpresent', 'Rlatest_time'
+                    'Rstatus_display', 'RIsAllNight', 'Rpresent', 'Rlatest_time',
                     )  # 'is_delete'
     list_display_links = ('Rid', )
     list_editable = ('Rtitle', 'Rmin', 'Rmax', 'Rstart', 'Rfinish')
     search_fields = ('Rid', 'Rtitle')
-    list_filter = ('Rstatus', )  # 'is_delete'
+    list_filter = ('Rstatus', 'RIsAllNight')  # 'is_delete'
     fieldsets = (
         [
             '基本信息', {
@@ -100,6 +100,7 @@ class RoomAdmin(admin.ModelAdmin):
                     'Rstart',
                     'Rfinish',
                     'Rstatus',
+                    'RIsAllNight',
                 ),
             }
         ],
