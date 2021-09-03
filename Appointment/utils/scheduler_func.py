@@ -151,7 +151,7 @@ def cancelFunction(request):  # 取消预约
             reverse("Appointment:admin_index") + "?warn_code=" +
             str(warn_code) + "&warning=" + warning)
     # 先准备发送人
-    stu_list = [stu.Sid for stu in appoint.students.all()]
+    stuid_list = [stu.Sid for stu in appoint.students.all()]
     with transaction.atomic():
         appoint_room_name = appoint.Room.Rtitle
         appoint.cancel()
@@ -174,7 +174,7 @@ def cancelFunction(request):  # 取消预约
     # todo: to all
         print('will send cancel message')
         scheduler.add_job(utils.send_wechat_message,
-                          args=[stu_list,
+                          args=[stuid_list,
                                 appoint.Astart,
                                 appoint.Room,
                                 "cancel",

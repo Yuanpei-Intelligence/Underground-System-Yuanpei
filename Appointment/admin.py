@@ -236,7 +236,7 @@ class AppointAdmin(admin.ModelAdmin):
                         have_success = 1
                         # send wechat message
                         scheduler.add_job(send_wechat_message,
-                                          args=[[appoint.major_student.Sid],  # stu_list
+                                          args=[[appoint.major_student.Sid],  # stuid_list
                                                 appoint.Astart,  # start_time
                                                 appoint.Room,     # room
                                                 "confirm_admin_w2c",  # message_type
@@ -261,7 +261,7 @@ class AppointAdmin(admin.ModelAdmin):
                         have_success = 1
                         # send wechat message
                         scheduler.add_job(send_wechat_message,
-                                          args=[[appoint.major_student.Sid],  # stu_list
+                                          args=[[appoint.major_student.Sid],  # stuid_list
                                                 appoint.Astart,  # start_time
                                                 appoint.Room,     # room
                                                 "confirm_admin_v2j",  # message_type
@@ -318,7 +318,7 @@ class AppointAdmin(admin.ModelAdmin):
 
                 # send wechat message
                 scheduler.add_job(send_wechat_message,
-                                  args=[[appoint.major_student.Sid],  # stu_list
+                                  args=[[appoint.major_student.Sid],  # stuid_list
                                         appoint.Astart,  # start_time
                                         appoint.Room,     # room
                                         "violate_admin",  # message_type
@@ -395,14 +395,14 @@ class AppointAdmin(admin.ModelAdmin):
             # print(appoint)
             try:
                 with transaction.atomic():
-                    stu_list = [stu.Sid for stu in appoint.students.all()]
+                    stuid_list = [stu.Sid for stu in appoint.students.all()]
                     for i in range(week_num):
                         # 调用函数完成预约
                         feedback = addAppoint({
                             'Rid':
                             appoint.Room.Rid,
                             'students':
-                            stu_list,
+                            stuid_list,
                             'non_yp_num':
                             appoint.Anon_yp_num,
                             'Astart':
@@ -452,14 +452,14 @@ class AppointAdmin(admin.ModelAdmin):
             # 到这里, 长线化预约发起成功
             scheduler.add_job(send_wechat_message,
                               args=[
-                                  stu_list,  # stu_list
+                                  stuid_list,  # stuid_list
                                   appoint.Astart,  # start_time
                                   appoint.Room,     # room
                                   "longterm",  # message_type
                                   appoint.major_student.Sname,  # major_student
                                   appoint.Ausage,  # usage
                                   appoint.Aannouncement,
-                                  len(stu_list) + appoint.Anon_yp_num,
+                                  len(stuid_list) + appoint.Anon_yp_num,
                                   week_num,  # reason, 这里用作表示持续周数
                                   #appoint.major_student.Scredit,
                               ],
@@ -493,9 +493,10 @@ class AppointAdmin(admin.ModelAdmin):
 
 @admin.register(CardCheckInfo)
 class CardCheckInfoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'Cardroom', 'student_display', 'Cardtime', 'CardStatus', 'ShouldOpenStatus', 'Message')  # 'is_delete'
+    list_display = ('id', 'Cardroom', 'student_display', 'Cardtime',
+                    'CardStatus', 'ShouldOpenStatus', 'Message')  # 'is_delete'
     search_fields = ('Cardroom__Rtitle',
-                     'Cardstudent__Sname', 'Cardroom__Rid', "Cardstudent__Sname", "id")
+                     'Cardstudent__Sname', 'Cardroom__Rid', "id")
     list_filter = ('CardStatus', 'ShouldOpenStatus')
     
     def student_display(self, obj):
