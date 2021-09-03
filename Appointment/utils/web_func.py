@@ -153,7 +153,7 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
         rid = appoint.Room.Rid
         if rid[:1] != 'R' and rid not in {'B109A', 'B207'}:
             utils.operation_writer(
-                global_info.system_log, f"预约{str(Aid)}的状态异常: {rid}房间提前合格", "web_func.finishAppoint", "Error")
+                global_info.system_log, f"预约{str(Aid)}的状态异常: {rid}房间提前合格", "web_func.finishAppoint", "Problem")
 
     elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常
         utils.operation_writer(
