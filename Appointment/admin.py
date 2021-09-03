@@ -152,9 +152,28 @@ class AppointAdmin(admin.ModelAdmin):
         'Astart',
         # 'Afinish',
     )  # 'Ausage'
-    list_filter = ('Astart', 'Atime', 'Astatus', 'Atemp_flag')
     date_hierarchy = 'Astart'
     readonly_fields = ('Atime', )
+
+    class ActivateFilter(admin.SimpleListFilter):
+        title = '有效状态' # 过滤标题显示为"以 有效状态"
+        parameter_name = 'Activate' # 过滤器使用的过滤字段
+    
+        def lookups(self, request, model_admin):
+            '''针对字段值设置过滤器的显示效果'''
+            return (
+                ('true', "有效"),
+                ('false', "无效"),
+            )
+        
+        def queryset(self, request, queryset):
+            '''定义过滤器的过滤动作'''
+            if self.value() == 'true':
+                return queryset.exclude(Astatus=Appoint.Status.CANCELED)
+            elif self.value() == 'false':
+                return queryset.filter(Astatus=Appoint.Status.CANCELED)
+
+    list_filter = ('Astart', 'Atime', 'Astatus', ActivateFilter, 'Atemp_flag')
 
     def Students(self, obj):
         students = [(obj.major_student.Sname, )]
