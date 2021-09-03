@@ -118,56 +118,74 @@ send_message = requests.session()
 
 
 # , credit=''):
-def send_wechat_message(stu_list, starttime, room, message_type, major_student, usage, announcement, num, reason=''):
-    '''stu_list: Iter[sid] 学号列表，不是学生!'''
+def send_wechat_message(stuid_list, starttime, room, message_type, major_student, usage, announcement, num, reason=''):
+    '''
+    stuid_list: Iter[sid] 学号列表，不是学生!
+    starttime: datetime | Any, 后者调用str方法
+    room: 将被调用str方法，所以可以不是实际的房间
+    major_student: str, 人名 不是学号！
+    '''
     # --- modify by pht: 适当简化了代码 --- #
+
+    try:starttime = starttime.strftime("%Y-%m-%d %H:%M")
+    except:starttime = str(starttime)
+    room = str(room)
+
+    # 之后会呈现的信息只由以下的标题和两个列表拼接而成
     title = '地下室预约提醒'
-    is_admin = 'admin' in message_type or message_type in {'longterm'}
-    time_and_place = []
-    show_appoint_info = True
-    show_main_student = True
+    is_admin = 'admin' in message_type or message_type in {'longterm'}  # 决定标题呈现方式
     appoint_info = []
-    show_announcement = False
+    show_time_and_place = True  # 显示预约时间地点
+    show_main_student = True    # 显示发起人
+    show_appoint_info = True    # 显示预约人员信息，包括用途 人数
+    show_announcement = False   # 显示提供给其他参与者的预约信息
     extra_info = []
-    if message_type == 'new':
-        title = '您有一条新的预约'  # 发起者 用途 人数
+
+    if message_type == 'admin':
+        title = '管理员通知'
+        show_time_and_place = False
+        show_appoint_info = False
+        extra_info = ['内容：' + reason]
+    elif message_type == 'new':
+        title = '您有一条新的预约'
         show_announcement = True
     elif message_type == 'start':
-        title = '您有一条预约即将在15分钟后开始'  # 发起者 用途 人数
+        title = '您有一条预约即将在15分钟后开始'
         show_announcement = True
     elif message_type == 'new&start':
-        title = '您有一条新的预约并即将在15分钟内开始'  # 发起者 用途 人数
+        title = '您有一条新的预约并即将在15分钟内开始'
         show_announcement = True
     elif message_type == 'violated':
         title = '您有一条新增的违约记录'  # 原因
+        show_main_student = False
         show_appoint_info = False
         extra_info = ['原因：' + reason]  # '当前信用分：'+str(credit)
     elif message_type == 'cancel':
-        title = '您有一条预约被取消'  # 发起者 用途 人数
+        title = '您有一条预约被取消'
     elif message_type == 'longterm':    # 发起一条长线预约
-        title = f'您的预约新增了{reason}周同时段预约'  # 类型
+        title = f'您的预约新增了{reason}周同时段预约'
         show_announcement = True
     elif message_type == 'confirm_admin_w2c':    # WAITING to CONFIRMED
-        title = '您有一条预约已确认完成'  # 类型
+        title = '您有一条预约已确认完成'
         show_main_student = False
     elif message_type == 'confirm_admin_v2j':    # VIOLATED to JUDGED
-        title = '您有一条违约的预约申诉成功'  # 类型
+        title = '您有一条违约的预约申诉成功'
         show_main_student = False
     elif message_type == 'violate_admin':    # VIOLATED
-        title = '您有一条预约被判定违约'  # 类型
+        title = '您有一条预约被判定违约'
         show_main_student = False
         extra_info = ['如有疑问请联系管理员']
     elif message_type == 'temp_appointment':  # 临时预约
         title = '您发起了一条临时预约'
     elif message_type == 'temp_appointment_fail':  # 临时预约失败
         title = '您发起的临时预约失败'
+        show_main_student = False
         show_appoint_info = False
         extra_info = ['原因：' + reason]
     else:
         # todo: 记得测试一下!为什么之前出问题的log就找不到呢TAT
         operation_writer(global_info.system_log,
-                         starttime.strftime("%Y-%m-%d %H:%M:%S") + str(
-                             room) + message_type + "出错，原因：unknown message_type", "func[send_wechat_message]",
+                        f'{starttime} {room} {message_type} ' + "出错，原因：unknown message_type", "utils.send_wechat_message",
                          "Problem")
         return
     
@@ -177,28 +195,29 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
         else:
             title = title + '\n'
 
-        if True:    # 目前所有信息都显示时间地点
-            time_and_place = ['时间：'+starttime.strftime("%Y-%m-%d %H:%M"), '地点：'+str(room)]
+        if show_time_and_place:    # 目前所有信息都显示时间地点
+            appoint_info += [f'时间：{starttime}', f'地点：{room}']
         
-        if show_appoint_info and not appoint_info:
-            appoint_info = ['用途：'+usage, '人数：'+str(num)]
-            if show_main_student:
-                appoint_info = ['发起者：' + major_student] + appoint_info
+        if show_main_student:
+            appoint_info += [f'发起者：{major_student}']
+
+        if show_appoint_info:
+            appoint_info += ['用途：' + usage, f'人数：{num}']
         
         if show_announcement and announcement:
-            extra_info = ['预约通知：' + announcement] + extra_info
+            appoint_info += ['预约通知：' + announcement]
     
-        message = title + '\n'.join(time_and_place + appoint_info + extra_info)
+        message = title + '\n'.join(appoint_info + extra_info)
 
     except Exception as e:
         operation_writer(global_info.system_log,
-                         f"尝试整合信息时出错，原因：{e}", "func[send_wechat_message]",
+                         f"尝试整合信息时出错，原因：{e}", "utils.send_wechat_message",
                          "Problem")
     # --- modify end(2021.9.1) --- #
 
     secret = hash_wechat_coder.encode(message)
     post_data = {
-        'touser': stu_list,
+        'touser': stuid_list,
         'toall': True,
         'content': message,
         'secret': secret,
@@ -216,20 +235,16 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
             # 正常连接永远返回200状态码
             # 只有能正常连接的时候才解析json数据，否则可能报错--pht
             operation_writer(global_info.system_log,
-                             starttime.strftime(
-                                 "%Y-%m-%d %H:%M:%S") + str(room)
-                             + message_type +
+                             f'{starttime} {room} {message_type} '+
                              f"向微信发消息失败，原因：状态码{response.status_code}异常",
-                             "func[send_wechat_message]",
+                             "utils.send_wechat_message",
                              "Problem")
             continue
         response = response.json()
         if response['status'] == 200:
             operation_writer(global_info.system_log,
-                             starttime.strftime(
-                                 "%Y-%m-%d %H:%M:%S") + str(room)
-                             + message_type +
-                             "向微信发消息成功", "func[send_wechat_message]",
+                             f'{starttime} {room} {message_type} '+
+                             "向微信发消息成功", "utils.send_wechat_message",
                              "OK")
             return
         # else check the reason, send wechat message again
@@ -245,11 +260,15 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
 
         if retry_enabled:
             if has_code and code != 206:
-                print('企业微信返回了异常的错误码：', code)
+                operation_writer(global_info.system_log,
+                                f'{starttime} {room} {message_type} '+
+                                f"企业微信返回了异常的错误码：{code}",
+                                "utils.send_wechat_message",
+                                "Problem")
                 continue    # 目前仅206代表部分失败，可以重发，不应该出现200或其他
-            stu_list = [i[0] for i in response['data']['detail']]
+            stuid_list = [i[0] for i in response['data']['detail']]
             post_data = {
-                'touser': stu_list,
+                'touser': stuid_list,
                 'toall': True,
                 'content': message,
                 'secret': secret,
@@ -266,17 +285,16 @@ def send_wechat_message(stu_list, starttime, room, message_type, major_student, 
             if has_code:
                 err_msg = f'{code} ' + err_msg
             operation_writer(global_info.system_log,
-                             starttime.strftime("%Y-%m-%d %H:%M:%S") + 
-                             str(room) + message_type + 
+                             f'{starttime} {room} {message_type} '+
                              f"向微信发消息失败，原因：{err_msg}",
-                             "func[send_wechat_message]",
+                             "utils.send_wechat_message",
                              "Problem")
             return
     # 重发都失败了
     operation_writer(global_info.system_log,
-                     starttime.strftime("%Y-%m-%d %H:%M:%S") + str(room) + message_type +
+                    f'{starttime} {room} {message_type} '+
                      "向微信发消息失败，原因：多次发送失败. 发起者为: " +
-                     str(major_student), "func[send_wechat_message]",
+                     str(major_student), "utils.send_wechat_message",
                      "Problem")
     return
     # return  1, response['data']['errMsg']
@@ -309,10 +327,10 @@ def set_appoint_reason(input_appoint, reason):
         if operation_succeed:
             str_pid = str(os.getpid())
             operation_writer(major_sid, "预约" + str(aid) + "出现违约:" +
-                                str(areason), "func[set_appoint_reason]"+str_pid, "OK") 
+                                str(areason), "utils.set_appoint_reason"+str_pid, "OK") 
         return True, ""
     except Exception as e:
-        return False, "in func[set_appoint_reason]: " + str(e)
+        return False, "in utils.set_appoint_reason: " + str(e)
 
 def appoint_violate(input_appoint, reason):  # 将一个aid设为违约 并根据real_credit_point设置
     try:
@@ -363,11 +381,11 @@ def appoint_violate(input_appoint, reason):  # 将一个aid设为违约 并根�
             str_pid = str(os.getpid())
             operation_writer(major_sid, "预约" + str(aid) + "出现违约:" +
                              str(areason) + ";是否扣除信用分:"+str(really_deduct) +
-                             ";剩余信用分"+str(credit), "func[appoint_violate]"+str_pid, "OK")  # str(os.getpid()),str(threading.current_thread().name()))
+                             ";剩余信用分"+str(credit), "utils.appoint_violate"+str_pid, "OK")  # str(os.getpid()),str(threading.current_thread().name()))
             #lock.release()
         return True, ""
     except Exception as e:
-        return False, "in func[appoint_violate]: " + str(e)
+        return False, "in utils.appoint_violate: " + str(e)
 
 
 # 文件操作体系
@@ -416,10 +434,10 @@ def operation_writer(user, message, source, status_code="OK"):
 
         if status_code == "Error" and global_info.debug_stuids:
             send_wechat_message(
-                stu_list=global_info.debug_stuids,
+                stuid_list=global_info.debug_stuids,
                 starttime=datetime.now(),
-                room=Room.objects.get(Rid="B107A"),
-                message_type="violated",
+                room='地下室后台',
+                message_type="admin",
                 major_student="地下室系统",
                 usage="发生Error错误",
                 announcement="",
