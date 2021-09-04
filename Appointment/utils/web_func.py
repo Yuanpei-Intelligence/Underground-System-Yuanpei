@@ -89,13 +89,25 @@ def startAppoint(Aid):  # 开始预约时的定时程序
         appoint.save()
         utils.operation_writer(
             global_info.system_log, f"预约{str(Aid)}成功开始: 状态变为进行中", "web_func.startAppoint")
+    
+    elif appoint.Astatus == Appoint.Status.PROCESSING:  # 已经开始
+        utils.operation_writer(
+            global_info.system_log, f"预约{str(Aid)}在检查时已经开始", "web_func.startAppoint")
 
     elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常，本该不存在这个任务
         utils.operation_writer(
-            global_info.system_log, f"预约{str(Aid)}的状态异常: {appoint.get_status()}", "web_func.startAppoint", "Problem")
+            global_info.system_log, f"预约{str(Aid)}的状态异常: {appoint.get_status()}", "web_func.startAppoint", "Error")
 
 
 def finishAppoint(Aid):  # 结束预约时的定时程序
+    '''
+    结束预约时的定时程序
+    - 接受单个预约id
+    - 可以处理任何状态的预约
+    - 对于非终止状态，判断人数是否合格，并转化为终止状态
+
+    要注意的是，由于定时任务可能执行多次，第二次的时候可能已经终止
+    '''
     try:
         appoint = Appoint.objects.get(Aid=Aid)
     except:
@@ -105,9 +117,23 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
     
     # 避免直接使用全局变量! by pht
     adjusted_camera_qualified_check_rate = global_info.camera_qualified_check_rate
+    
+    # --- add by pht: 终止状态 --- #
+    TERMINATE_STATUSES = [
+        Appoint.Status.CONFIRMED,
+        Appoint.Status.VIOLATED,
+        Appoint.Status.CANCELED,
+        ]
+    # --- add by pht(2021.9.4) --- #
 
-    # 如果处于进行中，表示没有迟到，只需检查人数
-    if appoint.Astatus == Appoint.Status.PROCESSING:
+    # 如果处于非终止状态，只需检查人数判断是否合格
+    if appoint.Astatus not in TERMINATE_STATUSES:
+        # 希望接受的非终止状态只有进行中，但其他状态也同样判定是否合格
+        if appoint.Astatus != Appoint.Status.PROCESSING:
+            utils.operation_writer(
+                appoint.major_student.Sid,
+                f"预约{str(Aid)}结束时状态为{appoint.get_status()}：照常检查是否合格",
+                "web_func.finishAppoint", "Error")
 
         # 摄像头出现超时问题，直接通过
         if datetime.now() - appoint.Room.Rlatest_time > timedelta(minutes=15):
@@ -149,17 +175,18 @@ def finishAppoint(Aid):  # 结束预约时的定时程序
                 utils.operation_writer(
                     global_info.system_log, f"预约{str(Aid)}人数合格，已通过", "web_func.finishAppoint", "OK")
 
-    elif appoint.Astatus == Appoint.Status.CONFIRMED:   # 可能已经判定通过，如公共区域和俄文楼
-        rid = appoint.Room.Rid
-        if rid[:1] != 'R' and rid not in {'B109A', 'B207'}:
-            utils.operation_writer(
-                global_info.system_log, f"预约{str(Aid)}的状态异常: {rid}房间提前合格", "web_func.finishAppoint", "Problem")
+    else:
+        if appoint.Astatus == Appoint.Status.CONFIRMED:   # 可能已经判定通过，如公共区域和俄文楼
+            rid = appoint.Room.Rid
+            if rid[:1] != 'R' and rid not in {'B109A', 'B207'}:
+                utils.operation_writer(
+                    global_info.system_log, f"预约{str(Aid)}提前合格: {rid}房间", "web_func.finishAppoint", "Problem")
 
-    elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常
-        utils.operation_writer(
-            global_info.system_log, f"预约{str(Aid)}的状态异常: {appoint.get_status()}", "web_func.finishAppoint", "Error")
-        appoint.Astatus = Appoint.Status.WAITING
-        appoint.save()
+        elif appoint.Astatus != Appoint.Status.CANCELED:    # 状态异常，多半是已经判定过了
+            utils.operation_writer(
+                global_info.system_log, f"预约{str(Aid)}提前终止: {appoint.get_status()}", "web_func.finishAppoint", "Problem")
+            # appoint.Astatus = Appoint.Status.WAITING
+            # appoint.save()
 
 
 # 用于前端显示支持拼音搜索的人员列表
