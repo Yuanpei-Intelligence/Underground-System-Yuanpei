@@ -140,3 +140,8 @@ test_data/
 comment/
 avatar/
 summary_info
+
+# local changes #
+* old.*
+*_old.*
+*fake.*
