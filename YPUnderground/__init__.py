@@ -38,6 +38,7 @@ class LongTermInfo():
             #load_file.close()
             self.YPPF_salt = load_json['token']['YPPF_salt']
             self.wechat_salt = load_json['token']['wechat_salt']
+            self.display_token = load_json['token']['display']
         except:
             raise IndexError("Can not find token field, please check your json file.")
 

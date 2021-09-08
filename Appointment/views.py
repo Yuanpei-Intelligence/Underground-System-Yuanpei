@@ -310,7 +310,7 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
                     'message': 'invalid params',
                 }},
                 status=400)
-        if display_token != "display_from_underground":
+        if display_token != global_info.display_token:
             return JsonResponse(
                 {'statusInfo': {
                     'message': 'invalid token:'+str(display_token),
