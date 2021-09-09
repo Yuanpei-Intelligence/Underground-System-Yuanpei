@@ -64,8 +64,6 @@ Views.py 使用说明
 
 # 一些固定值
 wklist = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-
 def identity_check(request):    # 判断用户是否是本人
     # 是否需要检测
 
@@ -346,6 +344,7 @@ def display_getappoint(request):    # 用于为班牌机提供展示预约的信
 # tag searchadmin_index
 def admin_index(request):   # 我的账户也主函数
     # 用户校验
+    login_url = global_info.login_url
     if not identity_check(request):
         print(direct_to_login(request))
         return redirect(direct_to_login(request))
@@ -400,6 +399,7 @@ def admin_index(request):   # 我的账户也主函数
 # modified by wxy
 # tag searchadmin_credit
 def admin_credit(request):
+    login_url = global_info.login_url
     if not identity_check(request):
         return redirect(direct_to_login(request))
 
@@ -589,6 +589,7 @@ def index(request):  # 主页
     search_code = 0
     warn_code = 0
     message_code = 0
+    login_url = global_info.login_url
     # 处理学院公告
     if (College_Announcement.objects.all()):
         try:
