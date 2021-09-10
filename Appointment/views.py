@@ -495,7 +495,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     if len(room_appoint) != 0:  # 当前有预约
 
         if len(room_appoint.filter(students__in=[student])) == 0:   # 不是自己的预约
-            cardcheckinfo_writer(student, room, False, False, f"刷卡拒绝：存在预约")
+            cardcheckinfo_writer(student, room, False, False, f"刷卡拒绝：该房间有别人的预约，或者距离别人的下一条预约开始不到15min！")
             return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
         else:   # 自己的预约
@@ -505,7 +505,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
     else:   # 当前无预约
 
         if check_temp_appoint(room) == False:   # 房间不可以临时预约
-            cardcheckinfo_writer(student, room, False, False, f"刷卡拒绝：不可临时预约")
+            cardcheckinfo_writer(student, room, False, False, f"刷卡拒绝：该房间不可临时预约")
             return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
         else:   # 该房间可以用于临时预约
@@ -514,14 +514,24 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             start = datetime(now_time.year, now_time.month, now_time.day,
                              now_time.hour, now_time.minute, 0)  # 需要剥离秒级以下的数据，否则admin-index无法正确渲染
             timeid = web_func.get_time_id(room, time(start.hour, start.minute))
+            
+            # 房间未开放
+            if timeid < 0:
+                message = f"该时段房间未开放！别熬夜了，回去睡觉！"
+                cardcheckinfo_writer(student, room, False,
+                                     False, f"刷卡拒绝：临时预约失败（{message}）")
+                send_wechat_message(
+                    [Sid], start, room, "temp_appointment_fail", student, "临时预约", "", 1, message)
+                return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
+
             finish, valid = web_func.get_hour_time(room, timeid + 1)
             finish = datetime(now_time.year, now_time.month, now_time.day, int(
                 finish.split(':')[0]), int(finish.split(':')[1]), 0)
 
             # 检查时间是否合法
             # 合法条件：为避免冲突，临时预约时长必须超过15分钟；预约时在房间可用时段
-            # 时间合法（暂时将间隔定为5min）
-            if valid and finish - start >= timedelta(minutes=5):
+            # OBSELETE: 时间合法（暂时将间隔定为5min）
+            if valid:
                 contents = {
                     'Rid': Rid,
                     'students': [Sid],
@@ -549,8 +559,8 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
                         [Sid], start, room, "temp_appointment_fail", student, "临时预约", "", 1, message)
                     return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
 
-            else:   # 预约时长不超过5分钟 或 预约时间不合法
-                message = f"时间不合法"
+            else:   # 预约时间不合法
+                message = f"预约时间不合法，请不要恶意篡改数据！"
                 cardcheckinfo_writer(student, room, False,
                                      False, f"刷卡拒绝：临时预约失败（{message}）")
                 send_wechat_message(
