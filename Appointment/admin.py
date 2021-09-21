@@ -133,7 +133,9 @@ class AppointAdmin(admin.ModelAdmin):
     actions_on_bottom = True
     LETTERS = set(string.digits + string.ascii_letters + string.punctuation)
     search_fields = ('Aid', 'Room__Rtitle',
-                     'major_student__Sname', 'Room__Rid', "students__Sname")
+                     'major_student__Sname', 'Room__Rid', "students__Sname",
+                     'major_student__pinyin', # 仅发起者缩写，方便搜索者区分发起者和参与者
+                     )
     list_display = (
         'Aid',
         'Room',
@@ -526,6 +528,9 @@ class CardCheckInfoAdmin(admin.ModelAdmin):
     list_filter = ('CardStatus', 'ShouldOpenStatus')
     
     def student_display(self, obj):
-        return obj.Cardstudent.Sname
+        try:
+            return obj.Cardstudent.Sname
+        except:
+            return '-'
 
     student_display.short_description = "刷卡者"
