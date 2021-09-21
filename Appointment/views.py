@@ -452,7 +452,7 @@ def door_check(request):  # 先以Sid Rid作为参数，看之后怎么改
             Rid = Rid[:4]
         room = Room.objects.get(Rid=Rid)
     except:
-        user = student or global_info.system_log
+        user = student or None  # TODO: 设置默认刷卡记录者
         cardcheckinfo_writer(user, room, False, False,
                              f"学号{Sid}或房间号{Rid}错误")
         return JsonResponse({"code": 1, "openDoor": "false"}, status=400)
