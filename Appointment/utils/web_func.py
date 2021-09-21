@@ -62,6 +62,8 @@ def get_adjusted_qualified_rate(original_qualified_rate, appoint) -> float:
     min31 = timedelta(minutes=31)
     if appoint.Room.Rid == 'B214':                  # 暂时因无法识别躺姿导致的合格率下降
         original_qualified_rate -= 0.15             # 建议在0.1-0.2之间 前者最严 后者最宽松
+    if appoint.Room.Rid == 'B107B':                 # 107B无法监控摄像头下方的问题
+        original_qualified_rate -= 0.05             # 建议在0-0.1之间 因为主要是识别出的人数问题
     if appoint.Room.Rid == 'B217' and appoint.Astart.hour >= 20 :   # 电影关灯导致识别不准确
         original_qualified_rate -= 0.05             # 建议在0-0.1之间 因为主要是识别出的人数问题
     if appoint.Afinish - appoint.Astart < min31:    # 减少时间过短时前后未准时到的影响
