@@ -175,6 +175,8 @@ def send_wechat_message(stuid_list, starttime, room, message_type, major_student
         title = '您有一条预约被判定违约'
         show_main_student = False
         extra_info = ['如有疑问请联系管理员']
+        if reason:
+            extra_info = [reason] + extra_info
     elif message_type == 'temp_appointment':  # 临时预约
         title = '您发起了一条临时预约'
     elif message_type == 'temp_appointment_fail':  # 临时预约失败
