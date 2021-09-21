@@ -192,7 +192,7 @@ class Appoint(models.Model):
             elif self.Areason == Appoint.Reason.R_TOOLITTLE:
                 status = "人数不足"
             elif self.Areason == Appoint.Reason.R_ELSE:
-                status = "管理员操作,请与管理员联系"
+                status = "管理员操作"
         elif self.Astatus == Appoint.Status.JUDGED:
             status = "申诉成功"
         return status
