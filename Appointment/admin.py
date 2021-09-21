@@ -325,12 +325,18 @@ class AppointAdmin(admin.ModelAdmin):
                                      level=messages.WARNING)
         try:
             for appoint in queryset:
-                assert appoint.Astatus != Appoint.Status.VIOLATED
+                assert not (
+                    appoint.Astatus == Appoint.Status.VIOLATED
+                    and appoint.Areason == Appoint.Reason.R_ELSE
+                )
+                ori_status = appoint.get_status()
                 # if appoint.Astatus == Appoint.Status.WAITING:
-                appoint.Astatus = Appoint.Status.VIOLATED
+                # 已违规时不扣除信用分，仅提示用户
+                if appoint.Astatus != Appoint.Status.VIOLATED:
+                    appoint.Astatus = Appoint.Status.VIOLATED
+                    appoint.major_student.Scredit -= 1  # 只扣除发起人
+                    appoint.major_student.save()
                 appoint.Areason = Appoint.Reason.R_ELSE
-                appoint.major_student.Scredit -= 1  # 只扣除发起人
-                appoint.major_student.save()
                 # for stu in appoint.students.all():
                 #    stu.Scredit -= 1
                 #    stu.save()
@@ -346,7 +352,7 @@ class AppointAdmin(admin.ModelAdmin):
                                         appoint.Ausage,  # usage
                                         appoint.Aannouncement,
                                         appoint.Ayp_num + appoint.Anon_yp_num,
-                                        appoint.get_status(),  # reason
+                                        f'原状态：{ori_status}',  # reason
                                         #appoint.major_student.Scredit,
                                         ],
                                   id=f'{appoint.Aid}_violate_admin_wechat',
@@ -355,7 +361,7 @@ class AppointAdmin(admin.ModelAdmin):
                     appoint.Aid)+"号预约被管理员设为违约"+"发起人："+str(appoint.major_student), "admin.violate", "OK")
         except:
             return self.message_user(request=request,
-                                     message='操作失败!只允许对违约的条目操作!',
+                                     message='操作失败!只允许对未审核的条目操作!',
                                      level=messages.WARNING)
 
         return self.message_user(request, "设为违约成功!")
