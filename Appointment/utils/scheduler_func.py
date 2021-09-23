@@ -77,12 +77,14 @@ def set_scheduler(appoint):
         scheduler.add_job(web_func.startAppoint,
                             args=[appoint.Aid],
                             id=f'{appoint.Aid}_start',
+                            replace_existing=True,
                             next_run_time=start)
 
     # write by cdf start2  # 添加定时任务：finish
     scheduler.add_job(web_func.finishAppoint,
                         args=[appoint.Aid],
                         id=f'{appoint.Aid}_finish',
+                        replace_existing=True,
                         next_run_time=finish)
     return True
 
@@ -230,6 +232,7 @@ def set_start_wechat(appoint, students_id=None, notify_new=True):
                                     # appoint.major_student.Scredit,
                                     ],
                                 id=f'{appoint.Aid}_start_wechat',
+                                replace_existing=True,
                                 next_run_time=datetime.now() + timedelta(seconds=5))
         else:
             utils.operation_writer(global_info.system_log, "预约"+str(appoint.Aid) +
@@ -251,6 +254,7 @@ def set_start_wechat(appoint, students_id=None, notify_new=True):
                                     # appoint.major_student.Scredit,
                                     ],
                                 id=f'{appoint.Aid}_new_wechat',
+                                replace_existing=True,
                                 next_run_time=datetime.now() + timedelta(seconds=5))
         scheduler.add_job(utils.send_wechat_message,
                             args=[students_id,
@@ -265,6 +269,7 @@ def set_start_wechat(appoint, students_id=None, notify_new=True):
                                 # appoint.major_student.Scredit,
                                 ],
                             id=f'{appoint.Aid}_start_wechat',
+                            replace_existing=True,
                             next_run_time=appoint.Astart - timedelta(minutes=15))
     else:  # 距离预约开始还有不到15分钟，提醒有新预约并且马上开始
         # send_status, err_message = utils.send_wechat_message(students_id, appoint.Astart, appoint.Room,"new&start")
@@ -281,6 +286,7 @@ def set_start_wechat(appoint, students_id=None, notify_new=True):
                                 # appoint.major_student.Scredit,
                                 ],
                             id=f'{appoint.Aid}_start_wechat',
+                            replace_existing=True,
                             next_run_time=datetime.now() + timedelta(seconds=5))
     return True
 
