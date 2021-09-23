@@ -200,6 +200,9 @@ def cameracheck(request):   # 摄像头post的后端函数
         if room.Rid == "B107B":
             # 107b的监控不太靠谱，正下方看不到
             num_need = min(max(global_info.today_min, num_need - 2), num_need)
+        elif room.Rid == "B217" and content.Astart.hour >= 20:
+            # 地下室关灯导致判定不清晰
+            num_need = min(max(global_info.today_min, num_need - 2), num_need)
         if content.Atime.date() == content.Astart.date():
             # 如果预约时间在使用时间的24h之内 则人数下限为2
             num_need = min(global_info.today_min, num_need)
