@@ -472,7 +472,7 @@ class AppointAdmin(admin.ModelAdmin):
                         '''
             except Exception as e:
                 operation_writer(global_info.system_log, "学生" + str(appoint.major_student) +
-                                 "出现添加长线化预约失败的问题:"+str(e), "admin.longterm", "Error")
+                                 "出现添加长线化预约失败的问题:"+str(e), "admin.longterm", "Problem")
                 return self.message_user(request=request,
                                          message=str(e),
                                          level=messages.WARNING)
