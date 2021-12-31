@@ -174,7 +174,11 @@ def send_wechat_message(stuid_list, starttime, room, message_type, major_student
     elif message_type == 'violate_admin':    # VIOLATED
         title = '您有一条预约被判定违约'
         show_main_student = False
-        extra_info = ['如有疑问请联系管理员']
+        extra_info = [
+            '常见违规原因包括：用途不实、盗用他人信息预约、将功能房用作其他用途等',
+            '请尽快取消同类预约，避免再次扣分',
+            '如有疑问请联系管理员或咨询反馈',
+            ]
         if reason:
             extra_info = [reason] + extra_info
     elif message_type == 'temp_appointment':  # 临时预约
