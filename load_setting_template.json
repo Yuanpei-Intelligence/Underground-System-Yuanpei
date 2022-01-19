@@ -8,6 +8,7 @@
     },
     "token":{
         "YPPF_salt":        "$yppf_salt$",
+        "display":          "$display_token$",
         "wechat_salt":      "$wechat_salt$"
     },
     "database":{
