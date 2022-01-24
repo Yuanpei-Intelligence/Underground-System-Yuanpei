@@ -873,9 +873,10 @@ def arrange_talk_room(request):
         check_type = str(request.GET.get("type"))
         assert check_type in {"russ", "talk"}
         re_time = datetime(year, month, day)  # 如果有bug 直接跳转
-        if re_time.date() < datetime.now().date() or re_time.date(
-        ) - datetime.now().date() > timedelta(days=6):  # 这种就是乱改url
-            return redirect(reverse("Appointment:idnex"))
+        if (re_time.date() < datetime.now().date()
+                or re_time.date() - datetime.now().date() > timedelta(days=6)):
+            # 这种就是乱改url
+            return redirect(reverse("Appointment:index"))
         # 接下来判断时间
     except:
         return redirect(reverse("Appointment:index"))
